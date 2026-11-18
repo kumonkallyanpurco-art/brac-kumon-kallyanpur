@@ -328,12 +328,18 @@ function App() {
       (subjectFilter === 'All' || student.subject === subjectFilter);
   }), [students, search, statusFilter, subjectFilter]);
 
-  const stats = useMemo(() => ({
-    total: students.length,
-    active: students.filter(s => s.current_status === 'Active').length,
-    onHold: students.filter(s => s.current_status === 'On Hold').length,
-    discontinued: students.filter(s => s.current_status === 'Discontinued').length
-  }), [students]);
+  const stats = useMemo(() => {
+    const countedStudents = students.filter(s => !s.exclude_from_subject_totals);
+    return {
+      total: students.length,
+      active: students.filter(s => s.current_status === 'Active').length,
+      onHold: students.filter(s => s.current_status === 'On Hold').length,
+      discontinued: students.filter(s => s.current_status === 'Discontinued').length,
+      math: countedStudents.filter(s => s.subject === 'Math' || s.subject === 'Both').length,
+      english: countedStudents.filter(s => s.subject === 'English' || s.subject === 'Both').length,
+      both: countedStudents.filter(s => s.subject === 'Both').length
+    };
+  }, [students]);
 
   async function login(event) {
     event.preventDefault();
@@ -453,6 +459,9 @@ function App() {
       <article className="stat-card"><span>Active students</span><strong>{stats.active}</strong><small>Currently enrolled</small></article>
       <article className="stat-card"><span>On hold</span><strong>{stats.onHold}</strong><small>Temporarily paused</small></article>
       <article className="stat-card"><span>Discontinued</span><strong>{stats.discontinued}</strong><small>Inactive records</small></article>
+      <article className="stat-card"><span>Math enrollments</span><strong>{stats.math}</strong><small>Includes Both subjects</small></article>
+      <article className="stat-card"><span>English enrollments</span><strong>{stats.english}</strong><small>Includes Both subjects</small></article>
+      <article className="stat-card"><span>Both subjects</span><strong>{stats.both}</strong><small>Math + English</small></article>
     </section>
 
     {activeTab === 'Students' && <section className="content-card">
