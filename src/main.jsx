@@ -337,7 +337,8 @@ function App() {
       discontinued: students.filter(s => s.current_status === 'Discontinued').length,
       math: countedStudents.filter(s => s.subject === 'Math' || s.subject === 'Both').length,
       english: countedStudents.filter(s => s.subject === 'English' || s.subject === 'Both').length,
-      both: countedStudents.filter(s => s.subject === 'Both').length
+      both: countedStudents.filter(s => s.subject === 'Both').length,
+      totalSubjects: countedStudents.reduce((total, s) => total + (s.subject === 'Both' ? 2 : (s.subject === 'Math' || s.subject === 'English' ? 1 : 0)), 0)
     };
   }, [students]);
 
@@ -462,6 +463,7 @@ function App() {
       <article className="stat-card"><span>Math enrollments</span><strong>{stats.math}</strong><small>Includes Both subjects</small></article>
       <article className="stat-card"><span>English enrollments</span><strong>{stats.english}</strong><small>Includes Both subjects</small></article>
       <article className="stat-card"><span>Both subjects</span><strong>{stats.both}</strong><small>Math + English</small></article>
+      <article className="stat-card"><span>Total subject count</span><strong>{stats.totalSubjects}</strong><small>Math + English enrollments combined</small></article>
     </section>
 
     {activeTab === 'Students' && <section className="content-card">
