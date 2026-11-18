@@ -468,7 +468,7 @@ function App() {
 
     {activeTab === 'Fees' && isAdmin && <section className="content-card">
       <div className="section-heading"><div><p className="eyebrow">PAYMENT MANAGEMENT</p><h2>Monthly fee management</h2><p className="muted">Record full or partial payments. Payment date and fee month are stored separately.</p></div></div>
-      <div className="fee-period"><label>Fee month<select value={feeMonth} onChange={e => setFeeMonth(e.target.value)}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label><label>Year<input type="number" value={feeYear} onChange={e => setFeeYear(e.target.value)} /></label></div>
+      <div className="fee-period"><label>Fee month<select value={feeMonth} onChange={e => {setFeeMonth(e.target.value);applyFeeDefaults(feeStudent,e.target.value,feeYear);}}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label><label>Year<input type="number" value={feeYear} onChange={e => {setFeeYear(e.target.value);if(e.target.value)applyFeeDefaults(feeStudent,feeMonth,e.target.value);}} /></label></div>
       <div className="stat-grid fee-stats">
         <article className="stat-card"><span>Expected monthly fee</span><strong>৳{money(monthlyFeeStats.expected)}</strong></article>
         <article className="stat-card"><span>Received</span><strong>৳{money(monthlyFeeStats.received)}</strong></article>
@@ -488,7 +488,7 @@ function App() {
       </form>
       <h3>Monthly payment status</h3>
       <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student name</th><th>Subject</th><th>Fee plan</th><th>Expected</th><th>Received</th><th>Due</th><th>Status</th></tr></thead><tbody>
-        {students.map(s=>{const expected=monthlyExpectedByStudent[s.id]||0;const paid=feePaidByStudent[s.id]||0;const plan=monthlyPlanByStudent[s.id];const status=plan==='Exempt'?'Exempt':plan==='No Fee'?'No fee':paid>=expected?'Paid':paid>0?'Partial':'Unpaid';return <tr key={s.id}><td>{s.student_id}</td><td>{s.full_name}</td><td>{monthlySubjectByStudent[s.id]||s.subject}</td><td>{plan}</td><td>৳{money(expected)}</td><td>৳{money(paid)}</td><td>৳{money(Math.max(0,expected-paid))}</td><td>{status}</td></tr>;})}
+        {students.map(s=>{const expected=monthlyExpectedByStudent[s.id]||0;const paid=feePaidByStudent[s.id]||0;const plan=monthlyPlanByStudent[s.id];const status=expected===0&&paid>0?'Check':plan==='Exempt'?'Exempt':plan==='No Fee'?'No fee':paid>=expected?'Paid':paid>0?'Partial':'Unpaid';return <tr key={s.id}><td>{s.student_id}</td><td>{s.full_name}</td><td>{monthlySubjectByStudent[s.id]||s.subject}</td><td>{plan}</td><td>৳{money(expected)}</td><td>৳{money(paid)}</td><td>৳{money(Math.max(0,expected-paid))}</td><td>{status}</td></tr>;})}
       </tbody></table></div>
       <h3>Payment history</h3>
       <div className="table-wrap"><table><thead><tr><th>Payment date</th><th>Student ID</th><th>Name</th><th>Fee type</th><th>Fee month</th><th>Amount</th><th>Method</th><th>Receipt</th></tr></thead><tbody>
