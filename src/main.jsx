@@ -6,7 +6,7 @@ import './style.css';
 const emptyStudent = {
   student_id: '', full_name: '', subject: 'Math', admission_date: '',
   class_start_date: '', stop_billing_from: '', class_days: 'Saturday & Tuesday', class_time: '11:00',
-  current_status: 'Active', no_fee: false, school_class: '', medium: '', remarks: ''
+  current_status: 'Active', no_fee: false, consent_from: 'No', znzn: 'No', starting_math_level: '', starting_english_level: '', exclude_from_subject_totals: false, status_effective_date: '', school_class: '', medium: '', remarks: ''
 };
 const APP_TIME_ZONE = 'Asia/Dhaka';
 const dhakaDateParts = new Intl.DateTimeFormat('en-CA', {
@@ -131,7 +131,7 @@ function App() {
     setProfile(profileData);
     const { data, error: studentsError } = await supabase
       .from('students')
-      .select('id, student_id, full_name, subject, admission_date, class_start_date, stop_billing_from, class_days, class_time, current_class_days, current_class_time, current_status, enrollment_status, school_class, medium, remarks, no_fee, exclude_from_subject_totals')
+      .select('id, student_id, full_name, subject, admission_date, class_start_date, stop_billing_from, status_effective_date, class_days, class_time, current_class_days, current_class_time, current_status, enrollment_status, school_class, medium, remarks, no_fee, consent_from, znzn, starting_math_level, starting_english_level, exclude_from_subject_totals')
       .order('full_name', { ascending: true })
       .limit(1000);
     if (studentsError) setError('Could not load students: ' + studentsError.message);
@@ -393,6 +393,12 @@ function App() {
         current_status: form.current_status,
         enrollment_status: form.current_status,
         no_fee: !!form.no_fee,
+        consent_from: form.consent_from || null,
+        znzn: form.znzn || null,
+        starting_math_level: (form.starting_math_level || '').trim() || null,
+        starting_english_level: (form.starting_english_level || '').trim() || null,
+        exclude_from_subject_totals: !!form.exclude_from_subject_totals,
+        status_effective_date: form.status_effective_date || null,
         school_class: (form.school_class || '').trim() || null,
         medium: form.medium || null,
         remarks: (form.remarks || '').trim() || null
@@ -556,9 +562,15 @@ function App() {
         <label>Subject<select value={form.subject} onChange={e => setForm({...form, subject:e.target.value})}><option>Math</option><option>English</option><option>Both</option></select></label>
         <label>Status<select value={form.current_status} onChange={e => setForm({...form, current_status:e.target.value})}><option>Active</option><option>On Hold</option><option>Discontinued</option></select></label>
         <label>No fee (exempt)<input type="checkbox" checked={!!form.no_fee} onChange={e => setForm({...form, no_fee:e.target.checked})} /></label>
+        <label>Consent From<select value={form.consent_from || 'No'} onChange={e => setForm({...form, consent_from:e.target.value})}><option>Yes</option><option>No</option></select></label>
+        <label>ZnZn<select value={form.znzn || 'No'} onChange={e => setForm({...form, znzn:e.target.value})}><option>Yes</option><option>No</option></select></label>
+        <label>Math Starting Level<input value={form.starting_math_level || ''} onChange={e => setForm({...form, starting_math_level:e.target.value})} /></label>
+        <label>English Starting Level<input value={form.starting_english_level || ''} onChange={e => setForm({...form, starting_english_level:e.target.value})} /></label>
+        <label>Not counted in subject totals<input type="checkbox" checked={!!form.exclude_from_subject_totals} onChange={e => setForm({...form, exclude_from_subject_totals:e.target.checked})} /></label>
         <label>Admission date<input type="date" value={form.admission_date || ''} onChange={e => setForm({...form, admission_date:e.target.value})} /></label>
         <label>Class start date<input type="date" value={form.class_start_date || ''} onChange={e => setForm({...form, class_start_date:e.target.value})} /></label>
         <label>Stop billing from<input type="date" value={form.stop_billing_from || ''} onChange={e => setForm({...form, stop_billing_from:e.target.value})} /></label>
+        <label>Status effective date<input type="date" value={form.status_effective_date || ''} onChange={e => setForm({...form, status_effective_date:e.target.value})} /></label>
         <label>Class days<select value={form.class_days} onChange={e => setForm({...form, class_days:e.target.value})}><option>Saturday & Tuesday</option><option>Sunday & Wednesday</option></select></label>
         <label>Class time<select value={form.class_time} onChange={e => setForm({...form, class_time:e.target.value})}>{times.map(time => <option key={time} value={time}>{formatClassTime(time)}</option>)}</select></label>
         <label>School class<input value={form.school_class || ''} onChange={e => setForm({...form, school_class:e.target.value})} /></label>
