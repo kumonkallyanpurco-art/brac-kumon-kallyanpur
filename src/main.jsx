@@ -359,8 +359,8 @@ function App() {
     setNotice('');
     try {
       const payload = {
-        student_id: form.student_id.trim(),
-        full_name: form.full_name.trim(),
+        student_id: (form.student_id || '').trim(),
+        full_name: (form.full_name || '').trim(),
         subject: form.subject,
         admission_date: form.admission_date || null,
         class_start_date: form.class_start_date || null,
@@ -372,9 +372,9 @@ function App() {
         current_status: form.current_status,
         enrollment_status: form.current_status,
         no_fee: !!form.no_fee,
-        school_class: form.school_class.trim() || null,
+        school_class: (form.school_class || '').trim() || null,
         medium: form.medium || null,
-        remarks: form.remarks.trim() || null
+        remarks: (form.remarks || '').trim() || null
       };
       const result = editingId
         ? await supabase.from('students').update(payload).eq('id', editingId).select('id').maybeSingle()
