@@ -67,6 +67,7 @@ function App() {
   const [form, setForm] = useState(emptyStudent);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [profileHistory, setProfileHistory] = useState([]);
+  const [profileAttendance, setProfileAttendance] = useState([]);
   const [profileTab, setProfileTab] = useState('Overview');
   const [profileLoading, setProfileLoading] = useState(false);
 
@@ -350,16 +351,21 @@ function App() {
     setSelectedProfile(student);
     setProfileTab('Overview');
     setProfileHistory([]);
+    setProfileAttendance([]);
     setProfileLoading(true);
     setError('');
-    const { data, error: historyError } = await supabase
-      .from('student_history')
-      .select('id, event_date, event_type, subject, previous_level, new_level, test_level, test_result, previous_class_days, new_class_days, previous_class_time, new_class_time, previous_status, new_status, discontinued_reason_or_transfer_centre, remarks')
-      .eq('student_id', student.id)
-      .order('event_date', { ascending: false })
-      .limit(1000);
-    if (historyError) setError('Could not load student profile history: ' + historyError.message);
-    else setProfileHistory(data || []);
+    const [historyResult, attendanceResult] = await Promise.all([
+      supabase.from('student_history')
+        .select('id, event_date, event_type, subject, previous_level, new_level, test_level, test_result, previous_class_days, new_class_days, previous_class_time, new_class_time, previous_status, new_status, discontinued_reason_or_transfer_centre, remarks')
+        .eq('student_id', student.id).order('event_date', { ascending: false }).limit(1000),
+      supabase.from('student_attendance')
+        .select('id, class_date, attendance, remarks')
+        .eq('student_id', student.id).order('class_date', { ascending: false }).limit(1000)
+    ]);
+    if (historyResult.error) setError('Could not load student profile history: ' + historyResult.error.message);
+    else setProfileHistory(historyResult.data || []);
+    if (attendanceResult.error) setError('Could not load student attendance: ' + attendanceResult.error.message);
+    else setProfileAttendance(attendanceResult.data || []);
     setProfileLoading(false);
   }
 
@@ -514,7 +520,7 @@ function App() {
 
     {selectedProfile && activeTab === 'Students' && <section className="content-card student-profile-card">
       <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><h2>{selectedProfile.full_name}</h2><p className="muted">Student ID: {selectedProfile.student_id} · {selectedProfile.subject}</p></div><button className="button-light compact" onClick={() => setSelectedProfile(null)}>Back to directory</button></div>
-      <div className="profile-tabs">{['Overview','Learning Progress','Achievement Tests','Full History'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}</div>
+      <div className="profile-tabs">{['Overview','Learning Progress','Achievement Tests','Attendance','Full History'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}</div>
       {profileLoading && <div className="empty-state">Loading student history…</div>}
       {!profileLoading && profileTab === 'Overview' && <div className="profile-detail-grid">
         {[
@@ -539,6 +545,16 @@ function App() {
       {!profileLoading && profileTab === 'Achievement Tests' && <div className="table-wrap"><table><thead><tr><th>Test Date</th><th>Subject</th><th>Test Level</th><th>Result</th><th>Remarks</th></tr></thead><tbody>
         {profileHistory.filter(x => x.event_type === 'Achievement Test').map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.subject || '—'}</td><td>{x.test_level || '—'}</td><td>{x.test_result || '—'}</td><td>{x.remarks || '—'}</td></tr>)}
       </tbody></table>{!profileHistory.some(x => x.event_type === 'Achievement Test') && <div className="empty-state">No achievement tests recorded.</div>}</div>}
+      {!profileLoading && profileTab === 'Attendance' && <>
+        <div className="stat-grid fee-stats">
+          <article className="stat-card"><span>Present</span><strong>{profileAttendance.filter(x => x.attendance === 'Present').length}</strong></article>
+          <article className="stat-card"><span>Absent</span><strong>{profileAttendance.filter(x => x.attendance === 'Absent').length}</strong></article>
+          <article className="stat-card"><span>Leave</span><strong>{profileAttendance.filter(x => x.attendance === 'Leave').length}</strong></article>
+        </div>
+        <div className="table-wrap"><table><thead><tr><th>Class Date</th><th>Attendance</th><th>Remarks</th></tr></thead><tbody>
+          {profileAttendance.map(x => <tr key={x.id}><td>{x.class_date}</td><td>{x.attendance}</td><td>{x.remarks || '—'}</td></tr>)}
+        </tbody></table>{!profileAttendance.length && <div className="empty-state">No attendance records found.</div>}</div>
+      </>}
       {!profileLoading && profileTab === 'Full History' && <div className="table-wrap"><table><thead><tr><th>Date</th><th>Event</th><th>Subject</th><th>Previous</th><th>New / Result</th><th>Reason / Remarks</th></tr></thead><tbody>
         {profileHistory.map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.event_type}</td><td>{x.subject || '—'}</td><td>{x.previous_level || x.previous_class_days || x.previous_status || x.previous_class_time || '—'}</td><td>{x.new_level || x.test_level || x.test_result || x.new_class_days || x.new_status || x.new_class_time || '—'}</td><td>{x.discontinued_reason_or_transfer_centre || x.remarks || '—'}</td></tr>)}
       </tbody></table>{!profileHistory.length && <div className="empty-state">No history events recorded.</div>}</div>}
