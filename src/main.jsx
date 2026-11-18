@@ -6,7 +6,7 @@ import './style.css';
 const emptyStudent = {
   student_id: '', full_name: '', subject: 'Math', admission_date: '',
   class_start_date: '', stop_billing_from: '', class_days: 'Saturday & Tuesday', class_time: '11:00',
-  current_status: 'Active', school_class: '', medium: '', remarks: ''
+  current_status: 'Active', no_fee: false, school_class: '', medium: '', remarks: ''
 };
 const times = ['11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
 const money = value => new Intl.NumberFormat('en-BD', { maximumFractionDigits: 0 }).format(value || 0);
@@ -348,6 +348,7 @@ function App() {
       current_class_time: form.class_time || null,
       current_status: form.current_status,
       enrollment_status: form.current_status,
+      no_fee: !!form.no_fee,
       school_class: form.school_class.trim() || null,
       medium: form.medium || null,
       remarks: form.remarks.trim() || null
@@ -503,6 +504,7 @@ function App() {
         <label>Student name<input value={form.full_name} onChange={e => setForm({...form, full_name:e.target.value})} required /></label>
         <label>Subject<select value={form.subject} onChange={e => setForm({...form, subject:e.target.value})}><option>Math</option><option>English</option><option>Both</option></select></label>
         <label>Status<select value={form.current_status} onChange={e => setForm({...form, current_status:e.target.value})}><option>Active</option><option>On Hold</option><option>Discontinued</option></select></label>
+        <label>No fee (exempt)<input type="checkbox" checked={!!form.no_fee} onChange={e => setForm({...form, no_fee:e.target.checked})} /></label>
         <label>Admission date<input type="date" value={form.admission_date || ''} onChange={e => setForm({...form, admission_date:e.target.value})} /></label>
         <label>Class start date<input type="date" value={form.class_start_date || ''} onChange={e => setForm({...form, class_start_date:e.target.value})} /></label>
         <label>Stop billing from<input type="date" value={form.stop_billing_from || ''} onChange={e => setForm({...form, stop_billing_from:e.target.value})} /></label>
