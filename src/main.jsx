@@ -5,11 +5,35 @@ import './style.css';
 
 const emptyStudent = {
   student_id: '', full_name: '', subject: 'Math', admission_date: '',
-  class_start_date: '', class_days: 'Saturday & Tuesday', class_time: '11:00',
+  class_start_date: '', stop_billing_from: '', class_days: 'Saturday & Tuesday', class_time: '11:00',
   current_status: 'Active', school_class: '', medium: '', remarks: ''
 };
 const times = ['11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
 const money = value => new Intl.NumberFormat('en-BD', { maximumFractionDigits: 0 }).format(value || 0);
+
+function getMonthlyFeeDefault(student, month, year, subjectChanges) {
+  const monthStart = new Date(Number(year), Number(month) - 1, 1);
+  const nextMonth = new Date(Number(year), Number(month), 1);
+  const asDate = value => value ? new Date(String(value).slice(0, 10) + 'T00:00:00') : null;
+  if (student.no_fee) return { plan: 'Exempt', amount: 0, subject: student.subject };
+  const startDate = asDate(student.class_start_date);
+  const stopDate = asDate(student.stop_billing_from);
+  if (startDate && startDate >= nextMonth) return { plan: 'No Fee', amount: 0, subject: student.subject };
+  if (stopDate) {
+    const stopMonth = new Date(stopDate.getFullYear(), stopDate.getMonth(), 1);
+    if (monthStart >= stopMonth) return { plan: 'No Fee', amount: 0, subject: student.subject };
+  } else if ((student.current_status || 'Active') !== 'Active') {
+    return { plan: 'No Fee', amount: 0, subject: student.subject };
+  }
+  const applicableChanges = (subjectChanges || [])
+    .filter(change => change.student_id === student.id && asDate(change.charged_from) && asDate(change.charged_from) <= monthStart)
+    .sort((a, b) => String(b.charged_from).localeCompare(String(a.charged_from)));
+  const subject = applicableChanges[0]?.new_subject || student.subject;
+  const halfMonth = !!(startDate && startDate >= monthStart && startDate < nextMonth && startDate.getDate() >= 15);
+  const plan = halfMonth ? 'Half Month' : 'Full Month';
+  const both = subject === 'Both';
+  return { plan, amount: halfMonth ? (both ? 2955 : 1650) : (both ? 5400 : 3000), subject };
+}
 
 function App() {
   const [session, setSession] = useState(null);
@@ -42,12 +66,15 @@ function App() {
   const [historyNew, setHistoryNew] = useState('');
   const [entryRemarks, setEntryRemarks] = useState('');
   const [feeRows, setFeeRows] = useState([]);
+  const [feeAssessments, setFeeAssessments] = useState([]);
+  const [subjectChanges, setSubjectChanges] = useState([]);
   const [feeStudent, setFeeStudent] = useState('');
   const [feeType, setFeeType] = useState('Monthly Fee');
   const [feeDate, setFeeDate] = useState(new Date().toISOString().slice(0, 10));
   const [feeMonth, setFeeMonth] = useState(String(new Date().getMonth() + 1));
   const [feeYear, setFeeYear] = useState(String(new Date().getFullYear()));
   const [feeAmount, setFeeAmount] = useState('');
+  const [feeExpected, setFeeExpected] = useState('');
   const [feePlan, setFeePlan] = useState('Full Month');
   const [feeMethod, setFeeMethod] = useState('Cash');
   const [feeReceipt, setFeeReceipt] = useState('');
@@ -90,7 +117,7 @@ function App() {
     setProfile(profileData);
     const { data, error: studentsError } = await supabase
       .from('students')
-      .select('id, student_id, full_name, subject, admission_date, class_start_date, class_days, class_time, current_class_days, current_class_time, current_status, enrollment_status, school_class, medium, remarks, no_fee, exclude_from_subject_totals')
+      .select('id, student_id, full_name, subject, admission_date, class_start_date, stop_billing_from, class_days, class_time, current_class_days, current_class_time, current_status, enrollment_status, school_class, medium, remarks, no_fee, exclude_from_subject_totals')
       .order('full_name', { ascending: true })
       .limit(1000);
     if (studentsError) setError('Could not load students: ' + studentsError.message);
@@ -152,21 +179,68 @@ function App() {
 
   const loadFees = useCallback(async () => {
     if (!isAdmin) return;
-    const { data, error: e } = await supabase.from('fee_payments')
-      .select('id, student_id, payment_date, fee_type, fee_for_month, fee_for_year, amount, method, receipt_no, remarks, students(student_id, full_name, subject, no_fee)')
-      .order('payment_date', { ascending: false }).limit(1500);
-    if (e) setError('Could not load fee payments: ' + e.message);
-    else setFeeRows(data || []);
+    const [paymentsResult, assessmentsResult, changesResult] = await Promise.all([
+      supabase.from('fee_payments')
+        .select('id, student_id, payment_date, fee_type, fee_for_month, fee_for_year, amount, method, receipt_no, remarks, students(student_id, full_name, subject, no_fee)')
+        .order('payment_date', { ascending: false }).limit(3000),
+      supabase.from('monthly_fee_assessments')
+        .select('id, student_id, fee_for_month, fee_for_year, fee_plan, expected_amount, subject_snapshot, remarks'),
+      supabase.from('subject_changes')
+        .select('id, student_id, change_date, charged_from, previous_subject, new_subject')
+        .order('charged_from', { ascending: false })
+    ]);
+    if (paymentsResult.error) setError('Could not load fee payments: ' + paymentsResult.error.message);
+    else setFeeRows(paymentsResult.data || []);
+    if (assessmentsResult.error) setError('Could not load monthly fee plans: ' + assessmentsResult.error.message);
+    else setFeeAssessments(assessmentsResult.data || []);
+    if (changesResult.error) setError('Could not load subject changes: ' + changesResult.error.message);
+    else setSubjectChanges(changesResult.data || []);
   }, [isAdmin]);
 
   useEffect(() => {
     if (session && isAdmin && activeTab === 'Fees') loadFees();
   }, [session, isAdmin, activeTab, loadFees]);
 
+  function applyFeeDefaults(studentId, month = feeMonth, year = feeYear) {
+    const student = students.find(s => s.id === studentId);
+    if (!student) { setFeeExpected(''); setFeeAmount(''); return; }
+    const assessment = feeAssessments.find(a => a.student_id === studentId && a.fee_for_month === Number(month) && a.fee_for_year === Number(year));
+    const calculated = getMonthlyFeeDefault(student, month, year, subjectChanges);
+    const plan = assessment?.fee_plan || calculated.plan;
+    const expected = assessment ? Number(assessment.expected_amount) : calculated.amount;
+    setFeePlan(['Full Month','Half Month','Custom'].includes(plan) ? plan : 'Full Month');
+    setFeeExpected(String(expected));
+    setFeeAmount('');
+  }
+
   async function saveFee(event) {
     event.preventDefault();
     if (!isAdmin || !feeStudent || !(Number(feeAmount) > 0)) return;
+    if (feeType === 'Monthly Fee' && !(Number(feeExpected) > 0)) {
+      setError('Set a valid expected monthly fee before recording this payment.');
+      return;
+    }
     setSaving(true); setError(''); setNotice('');
+    if (feeType === 'Monthly Fee') {
+      const student = students.find(s => s.id === feeStudent);
+      const calculated = student ? getMonthlyFeeDefault(student, feeMonth, feeYear, subjectChanges) : null;
+      const assessmentRow = {
+        student_id: feeStudent,
+        fee_for_month: Number(feeMonth),
+        fee_for_year: Number(feeYear),
+        fee_plan: feePlan,
+        expected_amount: Number(feeExpected),
+        subject_snapshot: calculated?.subject || student?.subject || null,
+        created_by: session.user.id
+      };
+      const { error: assessmentError } = await supabase.from('monthly_fee_assessments')
+        .upsert(assessmentRow, { onConflict: 'student_id,fee_for_month,fee_for_year' });
+      if (assessmentError) {
+        setError('Could not save the monthly fee plan: ' + assessmentError.message);
+        setSaving(false);
+        return;
+      }
+    }
     const row = {
       student_id: feeStudent, payment_date: feeDate, fee_type: feeType,
       fee_for_month: feeType === 'Monthly Fee' ? Number(feeMonth) : null,
@@ -191,22 +265,20 @@ function App() {
     if (r.student_id) acc[r.student_id] = (acc[r.student_id] || 0) + Number(r.amount || 0);
     return acc;
   }, {});
-  // Derive each student's expected fee from recorded monthly payment plans.
-  // Until a plan is recorded, show the approved full-month rate as the default.
-  const monthlyExpectedByStudent = students.reduce((acc, s) => {
-    if (s.current_status !== 'Active' || s.no_fee) return acc;
-    const studentPayments = selectedFeeRows.filter(r => r.student_id === s.id);
-    const plans = studentPayments.map(r => {
-      const match = String(r.remarks || '').match(/Fee plan: (Full Month|Half Month|Custom)/);
-      return match?.[1] || 'Full Month';
-    });
-    const plan = plans.includes('Full Month') ? 'Full Month' : plans.includes('Half Month') ? 'Half Month' : 'Full Month';
-    acc[s.id] = plan === 'Half Month' ? (s.subject === 'Both' ? 2955 : 1650) : (s.subject === 'Both' ? 5400 : 3000);
-    return acc;
-  }, {});
-  const monthlyFeeStats = students.filter(s => s.current_status === 'Active' && !s.no_fee).reduce((acc, s) => {
-    const expected = monthlyExpectedByStudent[s.id] ?? (s.subject === 'Both' ? 5400 : 3000);
-    const paid = feePaidByStudent[s.id] || 0;
+  const selectedAssessments = feeAssessments.filter(a => a.fee_for_month === Number(feeMonth) && a.fee_for_year === Number(feeYear));
+  const monthlyExpectedByStudent = {};
+  const monthlyPlanByStudent = {};
+  const monthlySubjectByStudent = {};
+  students.forEach(student => {
+    const assessment = selectedAssessments.find(a => a.student_id === student.id);
+    const calculated = getMonthlyFeeDefault(student, feeMonth, feeYear, subjectChanges);
+    monthlyExpectedByStudent[student.id] = assessment ? Number(assessment.expected_amount) : calculated.amount;
+    monthlyPlanByStudent[student.id] = assessment?.fee_plan || calculated.plan;
+    monthlySubjectByStudent[student.id] = assessment?.subject_snapshot || calculated.subject;
+  });
+  const monthlyFeeStats = students.reduce((acc, student) => {
+    const expected = monthlyExpectedByStudent[student.id] || 0;
+    const paid = feePaidByStudent[student.id] || 0;
     acc.expected += expected; acc.received += paid; acc.due += Math.max(0, expected - paid);
     return acc;
   }, { expected: 0, received: 0, due: 0 });
@@ -269,6 +341,7 @@ function App() {
       subject: form.subject,
       admission_date: form.admission_date || null,
       class_start_date: form.class_start_date || null,
+      stop_billing_from: form.stop_billing_from || null,
       class_days: form.class_days,
       current_class_days: form.class_days,
       class_time: form.class_time || null,
@@ -402,26 +475,26 @@ function App() {
         <article className="stat-card"><span>Outstanding</span><strong>৳{money(monthlyFeeStats.due)}</strong></article>
       </div>
       <form className="inline-entry-form" onSubmit={saveFee}>
-        <label>Student<select value={feeStudent} onChange={e => { const id=e.target.value; setFeeStudent(id); const s=students.find(x=>x.id===id); const both=s?.subject==='Both'; if(feeType==='Monthly Fee' && feePlan!=='Custom') setFeeAmount(feePlan==='Half Month'?(both?'2955':'1650'):(both?'5400':'3000')); }} required><option value="">Select student</option>{students.map(s=><option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
-        <label>Fee type<select value={feeType} onChange={e => { const v=e.target.value; setFeeType(v); if(v==='Enrollment Fee') setFeeAmount('1575'); else { const s=students.find(x=>x.id===feeStudent); const both=s?.subject==='Both'; setFeeAmount(feePlan==='Custom'?'':feePlan==='Half Month'?(both?'2955':'1650'):(both?'5400':'3000')); } }}><option>Monthly Fee</option><option>Enrollment Fee</option></select></label>
-        {feeType === 'Monthly Fee' ? <label>Fee plan<select value={feePlan} onChange={e => { const p=e.target.value; setFeePlan(p); const s=students.find(x=>x.id===feeStudent); const both=s?.subject==='Both'; setFeeAmount(p==='Full Month'?(both?'5400':'3000'):p==='Half Month'?(both?'2955':'1650'):''); }}><option>Full Month</option><option>Half Month</option><option>Custom</option></select></label> : <label>Enrollment fee amount<select value={feeAmount} onChange={e=>setFeeAmount(e.target.value)}><option value="1575">৳1,575 — Discount</option><option value="3300">৳3,300 — Without discount</option></select></label>}
+        <label>Student<select value={feeStudent} onChange={e => { const id=e.target.value; setFeeStudent(id); if(feeType==='Monthly Fee') applyFeeDefaults(id); else setFeeAmount('1575'); }} required><option value="">Select student</option>{students.map(s=><option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
+        <label>Fee type<select value={feeType} onChange={e => { const v=e.target.value; setFeeType(v); if(v==='Enrollment Fee') { setFeeExpected(''); setFeeAmount('1575'); } else { applyFeeDefaults(feeStudent); } }}><option>Monthly Fee</option><option>Enrollment Fee</option></select></label>
+        {feeType === 'Monthly Fee' ? <><label>Fee plan<select value={feePlan} onChange={e => { const p=e.target.value; setFeePlan(p); const s=students.find(x=>x.id===feeStudent); const calculated=s?getMonthlyFeeDefault(s,feeMonth,feeYear,subjectChanges):null; setFeeExpected(p==='Full Month'?(calculated?.subject==='Both'?'5400':'3000'):p==='Half Month'?(calculated?.subject==='Both'?'2955':'1650'):''); }}><option>Full Month</option><option>Half Month</option><option>Custom</option></select></label><label>Expected monthly fee (৳)<input type="number" min="0" step="0.01" value={feeExpected} onChange={e=>{setFeeExpected(e.target.value);setFeePlan('Custom');}} required /></label></> : <label>Enrollment fee amount<select value={feeAmount} onChange={e=>setFeeAmount(e.target.value)}><option value="1575">৳1,575 — Discount</option><option value="3300">৳3,300 — Without discount</option></select></label>}
         <label>Payment date<input type="date" value={feeDate} onChange={e => setFeeDate(e.target.value)} required /></label>
-        {feeType === 'Monthly Fee' && <><label>Fee for month<select value={feeMonth} onChange={e => setFeeMonth(e.target.value)}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label><label>Fee for year<input type="number" value={feeYear} onChange={e => setFeeYear(e.target.value)} required /></label></>}
-        <label>Amount (৳)<input type="number" min="1" step="0.01" value={feeAmount} onChange={e => {setFeeAmount(e.target.value); if(feeType==='Monthly Fee') setFeePlan('Custom');}} required /></label>
+        {feeType === 'Monthly Fee' && <><label>Fee for month<select value={feeMonth} onChange={e => {setFeeMonth(e.target.value);applyFeeDefaults(feeStudent,e.target.value,feeYear);}}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label><label>Fee for year<input type="number" value={feeYear} onChange={e => {setFeeYear(e.target.value);applyFeeDefaults(feeStudent,feeMonth,e.target.value);}} required /></label></>}
+        <label>Payment amount (৳)<input type="number" min="1" step="0.01" value={feeAmount} onChange={e => setFeeAmount(e.target.value)} required /></label>
         <label>Payment method<select value={feeMethod} onChange={e => setFeeMethod(e.target.value)}><option>Cash</option><option>Bank</option><option>bKash</option><option>Nagad</option><option>Other</option></select></label>
         <label>Receipt number<input value={feeReceipt} onChange={e => setFeeReceipt(e.target.value)} /></label>
         <label>Remarks<input value={feeRemarks} onChange={e => setFeeRemarks(e.target.value)} /></label>
         <button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Record payment'}</button>
       </form>
       <h3>Monthly payment status</h3>
-      <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student name</th><th>Subject</th><th>Expected</th><th>Received</th><th>Due</th></tr></thead><tbody>
-        {students.filter(s=>s.current_status==='Active').map(s=>{const expected=monthlyExpectedByStudent[s.id]??(s.no_fee?0:(s.subject==='Both'?5400:3000));const paid=feePaidByStudent[s.id]||0;return <tr key={s.id}><td>{s.student_id}</td><td>{s.full_name}</td><td>{s.subject}</td><td>৳{money(expected)}</td><td>৳{money(paid)}</td><td>৳{money(Math.max(0,expected-paid))}</td></tr>;})}
+      <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student name</th><th>Subject</th><th>Fee plan</th><th>Expected</th><th>Received</th><th>Due</th><th>Status</th></tr></thead><tbody>
+        {students.map(s=>{const expected=monthlyExpectedByStudent[s.id]||0;const paid=feePaidByStudent[s.id]||0;const plan=monthlyPlanByStudent[s.id];const status=plan==='Exempt'?'Exempt':plan==='No Fee'?'No fee':paid>=expected?'Paid':paid>0?'Partial':'Unpaid';return <tr key={s.id}><td>{s.student_id}</td><td>{s.full_name}</td><td>{monthlySubjectByStudent[s.id]||s.subject}</td><td>{plan}</td><td>৳{money(expected)}</td><td>৳{money(paid)}</td><td>৳{money(Math.max(0,expected-paid))}</td><td>{status}</td></tr>;})}
       </tbody></table></div>
       <h3>Payment history</h3>
       <div className="table-wrap"><table><thead><tr><th>Payment date</th><th>Student ID</th><th>Name</th><th>Fee type</th><th>Fee month</th><th>Amount</th><th>Method</th><th>Receipt</th></tr></thead><tbody>
         {feeRows.map(r=><tr key={r.id}><td>{r.payment_date}</td><td>{r.students?.student_id||'—'}</td><td>{r.students?.full_name||'—'}</td><td>{r.fee_type}</td><td>{r.fee_for_month?new Date(2000,r.fee_for_month-1,1).toLocaleString('en',{month:'short'})+' '+r.fee_for_year:'—'}</td><td>৳{money(r.amount)}</td><td>{r.method||'—'}</td><td>{r.receipt_no||'—'}</td></tr>)}
       </tbody></table>{!feeRows.length && <div className="empty-state">No payment records found.</div>}</div>
-      <p className="muted fee-note">Expected fees use approved VAT-exclusive rates. Half-month plans are reflected when recorded as Half Month. Custom plans and individual adjustments are not yet calculated automatically; verify their agreed amount separately. Keep the same fee plan selected for every partial payment in the same month.</p>
+      <p className="muted fee-note">Expected fees follow the workbook rules: class start date determines the first month's half/full rate; subject changes apply from their charged-from month; No Fee? students are exempt; stop-billing dates end charges from that month. The expected monthly amount is saved separately from each payment, so partial payments do not change the monthly due. Custom amounts are saved as a month-specific assessment.</p>
     </section>}
     {showForm && isAdmin && <div className="modal-backdrop" role="presentation"><form className="student-modal" onSubmit={saveStudent}>
       <div className="modal-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2>{editingId ? 'Edit student' : 'Add student'}</h2></div><button type="button" className="close-button" onClick={() => setShowForm(false)}>×</button></div>
@@ -432,6 +505,7 @@ function App() {
         <label>Status<select value={form.current_status} onChange={e => setForm({...form, current_status:e.target.value})}><option>Active</option><option>On Hold</option><option>Discontinued</option></select></label>
         <label>Admission date<input type="date" value={form.admission_date || ''} onChange={e => setForm({...form, admission_date:e.target.value})} /></label>
         <label>Class start date<input type="date" value={form.class_start_date || ''} onChange={e => setForm({...form, class_start_date:e.target.value})} /></label>
+        <label>Stop billing from<input type="date" value={form.stop_billing_from || ''} onChange={e => setForm({...form, stop_billing_from:e.target.value})} /></label>
         <label>Class days<select value={form.class_days} onChange={e => setForm({...form, class_days:e.target.value})}><option>Saturday & Tuesday</option><option>Sunday & Wednesday</option></select></label>
         <label>Class time<select value={form.class_time} onChange={e => setForm({...form, class_time:e.target.value})}>{times.map(time => <option key={time} value={time}>{time}</option>)}</select></label>
         <label>School class<input value={form.school_class || ''} onChange={e => setForm({...form, school_class:e.target.value})} /></label>
