@@ -191,10 +191,23 @@ function App() {
     if (r.student_id) acc[r.student_id] = (acc[r.student_id] || 0) + Number(r.amount || 0);
     return acc;
   }, {});
+  // Derive each student's expected fee from recorded monthly payment plans.
+  // Until a plan is recorded, show the approved full-month rate as the default.
+  const monthlyExpectedByStudent = students.reduce((acc, s) => {
+    if (s.current_status !== 'Active' || s.no_fee) return acc;
+    const studentPayments = selectedFeeRows.filter(r => r.student_id === s.id);
+    const plans = studentPayments.map(r => {
+      const match = String(r.remarks || '').match(/Fee plan: (Full Month|Half Month|Custom)/);
+      return match?.[1] || 'Full Month';
+    });
+    const plan = plans.includes('Full Month') ? 'Full Month' : plans.includes('Half Month') ? 'Half Month' : 'Full Month';
+    acc[s.id] = plan === 'Half Month' ? (s.subject === 'Both' ? 2955 : 1650) : (s.subject === 'Both' ? 5400 : 3000);
+    return acc;
+  }, {});
   const monthlyFeeStats = students.filter(s => s.current_status === 'Active' && !s.no_fee).reduce((acc, s) => {
-    const due = s.subject === 'Both' ? 5400 : 3000;
+    const expected = monthlyExpectedByStudent[s.id] ?? (s.subject === 'Both' ? 5400 : 3000);
     const paid = feePaidByStudent[s.id] || 0;
-    acc.expected += due; acc.received += paid; acc.due += Math.max(0, due - paid);
+    acc.expected += expected; acc.received += paid; acc.due += Math.max(0, expected - paid);
     return acc;
   }, { expected: 0, received: 0, due: 0 });
 
@@ -402,7 +415,7 @@ function App() {
       </form>
       <h3>Monthly payment status</h3>
       <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student name</th><th>Subject</th><th>Expected</th><th>Received</th><th>Due</th></tr></thead><tbody>
-        {students.filter(s=>s.current_status==='Active').map(s=>{const expected=s.no_fee?0:(s.subject==='Both'?5400:3000);const paid=feePaidByStudent[s.id]||0;return <tr key={s.id}><td>{s.student_id}</td><td>{s.full_name}</td><td>{s.subject}</td><td>৳{money(expected)}</td><td>৳{money(paid)}</td><td>৳{money(Math.max(0,expected-paid))}</td></tr>;})}
+        {students.filter(s=>s.current_status==='Active').map(s=>{const expected=monthlyExpectedByStudent[s.id]??(s.no_fee?0:(s.subject==='Both'?5400:3000));const paid=feePaidByStudent[s.id]||0;return <tr key={s.id}><td>{s.student_id}</td><td>{s.full_name}</td><td>{s.subject}</td><td>৳{money(expected)}</td><td>৳{money(paid)}</td><td>৳{money(Math.max(0,expected-paid))}</td></tr>;})}
       </tbody></table></div>
       <h3>Payment history</h3>
       <div className="table-wrap"><table><thead><tr><th>Payment date</th><th>Student ID</th><th>Name</th><th>Fee type</th><th>Fee month</th><th>Amount</th><th>Method</th><th>Receipt</th></tr></thead><tbody>
