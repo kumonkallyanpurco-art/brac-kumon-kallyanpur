@@ -353,39 +353,42 @@ function App() {
 
   async function saveStudent(event) {
     event.preventDefault();
-    if (!isAdmin) return;
+    if (!isAdmin || saving) return;
     setSaving(true);
     setError('');
     setNotice('');
-    const payload = {
-      student_id: form.student_id.trim(),
-      full_name: form.full_name.trim(),
-      subject: form.subject,
-      admission_date: form.admission_date || null,
-      class_start_date: form.class_start_date || null,
-      stop_billing_from: form.stop_billing_from || null,
-      class_days: form.class_days,
-      current_class_days: form.class_days,
-      class_time: form.class_time || null,
-      current_class_time: form.class_time || null,
-      current_status: form.current_status,
-      enrollment_status: form.current_status,
-      no_fee: !!form.no_fee,
-      school_class: form.school_class.trim() || null,
-      medium: form.medium || null,
-      remarks: form.remarks.trim() || null
-    };
-    const result = editingId
-      ? await supabase.from('students').update(payload).eq('id', editingId)
-      : await supabase.from('students').insert(payload);
-    if (result.error) {
-      setError(result.error.message);
-    } else {
-      setNotice(editingId ? 'Student details updated.' : 'Student added successfully.');
+    try {
+      const payload = {
+        student_id: form.student_id.trim(),
+        full_name: form.full_name.trim(),
+        subject: form.subject,
+        admission_date: form.admission_date || null,
+        class_start_date: form.class_start_date || null,
+        stop_billing_from: form.stop_billing_from || null,
+        class_days: form.class_days,
+        current_class_days: form.class_days,
+        class_time: form.class_time || null,
+        current_class_time: form.class_time || null,
+        current_status: form.current_status,
+        enrollment_status: form.current_status,
+        no_fee: !!form.no_fee,
+        school_class: form.school_class.trim() || null,
+        medium: form.medium || null,
+        remarks: form.remarks.trim() || null
+      };
+      const result = editingId
+        ? await supabase.from('students').update(payload).eq('id', editingId).select('id').maybeSingle()
+        : await supabase.from('students').insert(payload).select('id').single();
+      if (result.error) throw result.error;
+      if (!result.data?.id) throw new Error('No student record was updated. Please refresh the page and try again.');
+      setNotice(editingId ? 'Student details updated successfully.' : 'Student added successfully.');
       setShowForm(false);
       await loadData();
+    } catch (err) {
+      setError('Could not save student: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   function exportCsv() {
