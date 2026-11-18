@@ -41,6 +41,16 @@ function App() {
   const [historyPrevious, setHistoryPrevious] = useState('');
   const [historyNew, setHistoryNew] = useState('');
   const [entryRemarks, setEntryRemarks] = useState('');
+  const [feeRows, setFeeRows] = useState([]);
+  const [feeStudent, setFeeStudent] = useState('');
+  const [feeType, setFeeType] = useState('Monthly Fee');
+  const [feeDate, setFeeDate] = useState(new Date().toISOString().slice(0, 10));
+  const [feeMonth, setFeeMonth] = useState(String(new Date().getMonth() + 1));
+  const [feeYear, setFeeYear] = useState(String(new Date().getFullYear()));
+  const [feeAmount, setFeeAmount] = useState('');
+  const [feeMethod, setFeeMethod] = useState('Cash');
+  const [feeReceipt, setFeeReceipt] = useState('');
+  const [feeRemarks, setFeeRemarks] = useState('');
 
 
   const isAdmin = profile?.role === 'admin';
@@ -137,6 +147,54 @@ function App() {
     else { setNotice('History event added.'); setHistoryPrevious(''); setHistoryNew(''); setEntryRemarks(''); await loadHistory(); }
     setSaving(false);
   }
+
+
+  const loadFees = useCallback(async () => {
+    if (!isAdmin) return;
+    const { data, error: e } = await supabase.from('fee_payments')
+      .select('id, student_id, payment_date, fee_type, fee_for_month, fee_for_year, amount, method, receipt_no, remarks, students(student_id, full_name, subject, no_fee)')
+      .order('payment_date', { ascending: false }).limit(1500);
+    if (e) setError('Could not load fee payments: ' + e.message);
+    else setFeeRows(data || []);
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (session && isAdmin && activeTab === 'Fees') loadFees();
+  }, [session, isAdmin, activeTab, loadFees]);
+
+  async function saveFee(event) {
+    event.preventDefault();
+    if (!isAdmin || !feeStudent || !(Number(feeAmount) > 0)) return;
+    setSaving(true); setError(''); setNotice('');
+    const row = {
+      student_id: feeStudent, payment_date: feeDate, fee_type: feeType,
+      fee_for_month: feeType === 'Monthly Fee' ? Number(feeMonth) : null,
+      fee_for_year: feeType === 'Monthly Fee' ? Number(feeYear) : null,
+      amount: Number(feeAmount), method: feeMethod || null,
+      receipt_no: feeReceipt.trim() || null, remarks: feeRemarks.trim() || null,
+      created_by: session.user.id
+    };
+    const { error: e } = await supabase.from('fee_payments').insert(row);
+    if (e) setError(e.message);
+    else {
+      setNotice('Payment recorded successfully.');
+      setFeeAmount(''); setFeeReceipt(''); setFeeRemarks('');
+      await loadFees();
+    }
+    setSaving(false);
+  }
+
+  const selectedFeeRows = feeRows.filter(r => r.fee_type === 'Monthly Fee' && r.fee_for_month === Number(feeMonth) && r.fee_for_year === Number(feeYear));
+  const feePaidByStudent = selectedFeeRows.reduce((acc, r) => {
+    if (r.student_id) acc[r.student_id] = (acc[r.student_id] || 0) + Number(r.amount || 0);
+    return acc;
+  }, {});
+  const monthlyFeeStats = students.filter(s => s.current_status === 'Active' && !s.no_fee).reduce((acc, s) => {
+    const due = s.subject === 'Both' ? 5400 : 3000;
+    const paid = feePaidByStudent[s.id] || 0;
+    acc.expected += due; acc.received += paid; acc.due += Math.max(0, due - paid);
+    return acc;
+  }, { expected: 0, received: 0, due: 0 });
 
   const filteredStudents = useMemo(() => students.filter(student => {
     const query = search.trim().toLowerCase();
@@ -260,7 +318,7 @@ function App() {
 
 
     <nav className="tab-nav">
-      {['Students', 'Attendance', 'History'].map(tab => <button type="button" key={tab} className={activeTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => { setActiveTab(tab); setError(''); setNotice(''); }}>{tab}</button>)}
+      {['Students', 'Attendance', 'History', ...(isAdmin ? ['Fees'] : [])].map(tab => <button type="button" key={tab} className={activeTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => { setActiveTab(tab); setError(''); setNotice(''); }}>{tab}</button>)}
     </nav>
     <section className="stat-grid">
       <article className="stat-card"><span>Total students</span><strong>{stats.total}</strong><small>Registered records</small></article>
@@ -319,6 +377,36 @@ function App() {
       </tbody></table>{!historyRows.length && <div className="empty-state">No history events found.</div>}</div>
     </section>}
 
+
+    {activeTab === 'Fees' && isAdmin && <section className="content-card">
+      <div className="section-heading"><div><p className="eyebrow">PAYMENT MANAGEMENT</p><h2>Monthly fee management</h2><p className="muted">Record full or partial payments. Payment date and fee month are stored separately.</p></div></div>
+      <div className="fee-period"><label>Fee month<select value={feeMonth} onChange={e => setFeeMonth(e.target.value)}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label><label>Year<input type="number" value={feeYear} onChange={e => setFeeYear(e.target.value)} /></label></div>
+      <div className="stat-grid fee-stats">
+        <article className="stat-card"><span>Expected monthly fee</span><strong>৳{money(monthlyFeeStats.expected)}</strong></article>
+        <article className="stat-card"><span>Received</span><strong>৳{money(monthlyFeeStats.received)}</strong></article>
+        <article className="stat-card"><span>Outstanding</span><strong>৳{money(monthlyFeeStats.due)}</strong></article>
+      </div>
+      <form className="inline-entry-form" onSubmit={saveFee}>
+        <label>Student<select value={feeStudent} onChange={e => setFeeStudent(e.target.value)} required><option value="">Select student</option>{students.map(s=><option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
+        <label>Fee type<select value={feeType} onChange={e => setFeeType(e.target.value)}><option>Monthly Fee</option><option>Enrollment Fee</option></select></label>
+        <label>Payment date<input type="date" value={feeDate} onChange={e => setFeeDate(e.target.value)} required /></label>
+        {feeType === 'Monthly Fee' && <><label>Fee for month<select value={feeMonth} onChange={e => setFeeMonth(e.target.value)}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label><label>Fee for year<input type="number" value={feeYear} onChange={e => setFeeYear(e.target.value)} required /></label></>}
+        <label>Amount (৳)<input type="number" min="1" step="0.01" value={feeAmount} onChange={e => setFeeAmount(e.target.value)} required /></label>
+        <label>Payment method<select value={feeMethod} onChange={e => setFeeMethod(e.target.value)}><option>Cash</option><option>Bank</option><option>bKash</option><option>Nagad</option><option>Other</option></select></label>
+        <label>Receipt number<input value={feeReceipt} onChange={e => setFeeReceipt(e.target.value)} /></label>
+        <label>Remarks<input value={feeRemarks} onChange={e => setFeeRemarks(e.target.value)} /></label>
+        <button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Record payment'}</button>
+      </form>
+      <h3>Monthly payment status</h3>
+      <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student name</th><th>Subject</th><th>Expected</th><th>Received</th><th>Due</th></tr></thead><tbody>
+        {students.filter(s=>s.current_status==='Active').map(s=>{const expected=s.no_fee?0:(s.subject==='Both'?5400:3000);const paid=feePaidByStudent[s.id]||0;return <tr key={s.id}><td>{s.student_id}</td><td>{s.full_name}</td><td>{s.subject}</td><td>৳{money(expected)}</td><td>৳{money(paid)}</td><td>৳{money(Math.max(0,expected-paid))}</td></tr>;})}
+      </tbody></table></div>
+      <h3>Payment history</h3>
+      <div className="table-wrap"><table><thead><tr><th>Payment date</th><th>Student ID</th><th>Name</th><th>Fee type</th><th>Fee month</th><th>Amount</th><th>Method</th><th>Receipt</th></tr></thead><tbody>
+        {feeRows.map(r=><tr key={r.id}><td>{r.payment_date}</td><td>{r.students?.student_id||'—'}</td><td>{r.students?.full_name||'—'}</td><td>{r.fee_type}</td><td>{r.fee_for_month?new Date(2000,r.fee_for_month-1,1).toLocaleString('en',{month:'short'})+' '+r.fee_for_year:'—'}</td><td>৳{money(r.amount)}</td><td>{r.method||'—'}</td><td>{r.receipt_no||'—'}</td></tr>)}
+      </tbody></table>{!feeRows.length && <div className="empty-state">No payment records found.</div>}</div>
+      <p className="muted fee-note">Current estimate uses VAT-exclusive monthly rates: ৳3,000 for one subject and ৳5,400 for both. No-fee students are excluded. Half-month or individually adjusted fees should be checked against the actual agreed amount before recording a payment.</p>
+    </section>}
     {showForm && isAdmin && <div className="modal-backdrop" role="presentation"><form className="student-modal" onSubmit={saveStudent}>
       <div className="modal-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2>{editingId ? 'Edit student' : 'Add student'}</h2></div><button type="button" className="close-button" onClick={() => setShowForm(false)}>×</button></div>
       <div className="form-grid">
