@@ -28,6 +28,21 @@ function App() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyStudent);
 
+  const [activeTab, setActiveTab] = useState('Students');
+  const [attendanceRows, setAttendanceRows] = useState([]);
+  const [historyRows, setHistoryRows] = useState([]);
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [attendanceStudent, setAttendanceStudent] = useState('');
+  const [attendanceValue, setAttendanceValue] = useState('Present');
+  const [historyStudent, setHistoryStudent] = useState('');
+  const [historyDate, setHistoryDate] = useState(new Date().toISOString().slice(0, 10));
+  const [historyType, setHistoryType] = useState('Level Change');
+  const [historySubject, setHistorySubject] = useState('Math');
+  const [historyPrevious, setHistoryPrevious] = useState('');
+  const [historyNew, setHistoryNew] = useState('');
+  const [entryRemarks, setEntryRemarks] = useState('');
+
+
   const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
@@ -73,6 +88,55 @@ function App() {
   }, [session]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+
+  const loadAttendance = useCallback(async () => {
+    const { data, error: e } = await supabase.from('student_attendance')
+      .select('id, student_id, class_date, attendance, remarks, students(student_id, full_name)')
+      .order('class_date', { ascending: false }).limit(500);
+    if (e) setError(e.message); else setAttendanceRows(data || []);
+  }, []);
+
+  const loadHistory = useCallback(async () => {
+    const { data, error: e } = await supabase.from('student_history')
+      .select('id, student_id, event_date, event_type, subject, previous_level, new_level, test_level, test_result, previous_class_days, new_class_days, previous_status, new_status, remarks, students(student_id, full_name)')
+      .order('event_date', { ascending: false }).limit(500);
+    if (e) setError(e.message); else setHistoryRows(data || []);
+  }, []);
+
+  useEffect(() => {
+    if (session && activeTab === 'Attendance') loadAttendance();
+    if (session && activeTab === 'History') loadHistory();
+  }, [session, activeTab, loadAttendance, loadHistory]);
+
+  async function saveAttendance(event) {
+    event.preventDefault();
+    if (!isAdmin || !attendanceStudent) return;
+    setSaving(true); setError(''); setNotice('');
+    const { error: e } = await supabase.from('student_attendance').upsert({
+      student_id: attendanceStudent, class_date: attendanceDate,
+      attendance: attendanceValue, remarks: entryRemarks || null, created_by: session.user.id
+    }, { onConflict: 'student_id,class_date' });
+    if (e) setError(e.message);
+    else { setNotice('Attendance saved.'); setEntryRemarks(''); await loadAttendance(); }
+    setSaving(false);
+  }
+
+  async function saveHistory(event) {
+    event.preventDefault();
+    if (!isAdmin || !historyStudent) return;
+    setSaving(true); setError(''); setNotice('');
+    const row = { student_id: historyStudent, event_date: historyDate, event_type: historyType, subject: historySubject, remarks: entryRemarks || null, created_by: session.user.id };
+    if (historyType === 'Level Change') { row.previous_level = historyPrevious || null; row.new_level = historyNew || null; }
+    else if (historyType === 'Achievement Test') { row.test_level = historyPrevious || null; row.test_result = historyNew || null; }
+    else if (historyType === 'Schedule Change') { row.previous_class_days = historyPrevious || null; row.new_class_days = historyNew || null; }
+    else if (historyType === 'Status Change') { row.previous_status = historyPrevious || null; row.new_status = historyNew || null; }
+    else row.discontinued_reason_or_transfer_centre = historyNew || historyPrevious || null;
+    const { error: e } = await supabase.from('student_history').insert(row);
+    if (e) setError(e.message);
+    else { setNotice('History event added.'); setHistoryPrevious(''); setHistoryNew(''); setEntryRemarks(''); await loadHistory(); }
+    setSaving(false);
+  }
 
   const filteredStudents = useMemo(() => students.filter(student => {
     const query = search.trim().toLowerCase();
@@ -194,6 +258,10 @@ function App() {
     {error && <div className="alert error-box">{error}</div>}
     {notice && <div className="alert success-box">{notice}</div>}
 
+
+    <nav className="tab-nav">
+      {['Students', 'Attendance', 'History'].map(tab => <button type="button" key={tab} className={activeTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => { setActiveTab(tab); setError(''); setNotice(''); }}>{tab}</button>)}
+    </nav>
     <section className="stat-grid">
       <article className="stat-card"><span>Total students</span><strong>{stats.total}</strong><small>Registered records</small></article>
       <article className="stat-card"><span>Active students</span><strong>{stats.active}</strong><small>Currently enrolled</small></article>
@@ -201,7 +269,7 @@ function App() {
       <article className="stat-card"><span>Discontinued</span><strong>{stats.discontinued}</strong><small>Inactive records</small></article>
     </section>
 
-    <section className="content-card">
+    {activeTab === 'Students' && <section className="content-card">
       <div className="section-heading"><div><p className="eyebrow">STUDENT MANAGEMENT</p><h2>Student directory</h2><p className="muted">{isAdmin ? 'Add, update and manage student records.' : 'View student and classroom information.'}</p></div>
         <div className="section-actions">{isAdmin && <button className="primary-button compact" onClick={openNewStudent}>+ Add student</button>}<button className="button-light compact" onClick={exportCsv}>Export CSV</button></div>
       </div>
@@ -217,7 +285,39 @@ function App() {
       {loading && <div className="empty-state">Loading records…</div>}
       </div>
       <div className="table-footer">Showing {filteredStudents.length} of {students.length} students</div>
-    </section>
+
+    </section>}
+
+    {activeTab === 'Attendance' && <section className="content-card">
+      <div className="section-heading"><div><p className="eyebrow">CLASSROOM</p><h2>Student attendance</h2><p className="muted">Daily attendance register.</p></div></div>
+      {isAdmin && <form className="inline-entry-form" onSubmit={saveAttendance}>
+        <label>Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
+        <label>Student<select value={attendanceStudent} onChange={e => setAttendanceStudent(e.target.value)} required><option value="">Select student</option>{students.map(s => <option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
+        <label>Attendance<select value={attendanceValue} onChange={e => setAttendanceValue(e.target.value)}><option>Present</option><option>Absent</option><option>Leave</option></select></label>
+        <label>Remarks<input value={entryRemarks} onChange={e => setEntryRemarks(e.target.value)} /></label>
+        <button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save attendance'}</button>
+      </form>}
+      <div className="table-wrap"><table><thead><tr><th>Date</th><th>Student ID</th><th>Name</th><th>Status</th><th>Remarks</th></tr></thead><tbody>
+        {attendanceRows.map(r => <tr key={r.id}><td>{r.class_date}</td><td>{r.students?.student_id || '—'}</td><td>{r.students?.full_name || '—'}</td><td>{r.attendance}</td><td>{r.remarks || '—'}</td></tr>)}
+      </tbody></table>{!attendanceRows.length && <div className="empty-state">No attendance records found.</div>}</div>
+    </section>}
+
+    {activeTab === 'History' && <section className="content-card">
+      <div className="section-heading"><div><p className="eyebrow">STUDENT PROGRESS</p><h2>Student history</h2><p className="muted">Add events without replacing previous history.</p></div></div>
+      {isAdmin && <form className="inline-entry-form" onSubmit={saveHistory}>
+        <label>Student<select value={historyStudent} onChange={e => setHistoryStudent(e.target.value)} required><option value="">Select student</option>{students.map(s => <option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
+        <label>Date<input type="date" value={historyDate} onChange={e => setHistoryDate(e.target.value)} required /></label>
+        <label>Event<select value={historyType} onChange={e => {setHistoryType(e.target.value);setHistoryPrevious('');setHistoryNew('');}}>{['Level Change','Achievement Test','Schedule Change','Status Change','Transfer In','Transfer Out'].map(x => <option key={x}>{x}</option>)}</select></label>
+        <label>Subject<select value={historySubject} onChange={e => setHistorySubject(e.target.value)}><option>Math</option><option>English</option></select></label>
+        <label>Previous / test level<input value={historyPrevious} onChange={e => setHistoryPrevious(e.target.value)} /></label>
+        <label>New level / result / details<input value={historyNew} onChange={e => setHistoryNew(e.target.value)} /></label>
+        <label>Remarks<input value={entryRemarks} onChange={e => setEntryRemarks(e.target.value)} /></label>
+        <button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Add history event'}</button>
+      </form>}
+      <div className="table-wrap"><table><thead><tr><th>Date</th><th>Student ID</th><th>Name</th><th>Event</th><th>Subject</th><th>Details</th><th>Remarks</th></tr></thead><tbody>
+        {historyRows.map(r => <tr key={r.id}><td>{r.event_date}</td><td>{r.students?.student_id || '—'}</td><td>{r.students?.full_name || '—'}</td><td>{r.event_type}</td><td>{r.subject || '—'}</td><td>{r.previous_level || r.test_level || r.previous_class_days || r.previous_status || ''}{r.new_level || r.test_result || r.new_class_days || r.new_status ? ' → ' + (r.new_level || r.test_result || r.new_class_days || r.new_status) : ''}</td><td>{r.remarks || '—'}</td></tr>)}
+      </tbody></table>{!historyRows.length && <div className="empty-state">No history events found.</div>}</div>
+    </section>}
 
     {showForm && isAdmin && <div className="modal-backdrop" role="presentation"><form className="student-modal" onSubmit={saveStudent}>
       <div className="modal-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2>{editingId ? 'Edit student' : 'Add student'}</h2></div><button type="button" className="close-button" onClick={() => setShowForm(false)}>×</button></div>
