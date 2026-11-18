@@ -213,6 +213,28 @@ function App() {
     setFeeAmount('');
   }
 
+  async function saveFeeAssessment() {
+    if (!isAdmin || !feeStudent || !(Number(feeExpected) > 0)) {
+      setError('Select a student and enter a valid expected monthly fee first.');
+      return;
+    }
+    setSaving(true); setError(''); setNotice('');
+    const student = students.find(s => s.id === feeStudent);
+    const calculated = student ? getMonthlyFeeDefault(student, feeMonth, feeYear, subjectChanges) : null;
+    const { error: assessmentError } = await supabase.from('monthly_fee_assessments').upsert({
+      student_id: feeStudent,
+      fee_for_month: Number(feeMonth),
+      fee_for_year: Number(feeYear),
+      fee_plan: feePlan,
+      expected_amount: Number(feeExpected),
+      subject_snapshot: calculated?.subject || student?.subject || null,
+      created_by: session.user.id
+    }, { onConflict: 'student_id,fee_for_month,fee_for_year' });
+    if (assessmentError) setError('Could not save the monthly fee plan: ' + assessmentError.message);
+    else { setNotice('Monthly fee plan saved.'); await loadFees(); }
+    setSaving(false);
+  }
+
   async function saveFee(event) {
     event.preventDefault();
     if (!isAdmin || !feeStudent || !(Number(feeAmount) > 0)) return;
@@ -485,6 +507,7 @@ function App() {
         <label>Payment method<select value={feeMethod} onChange={e => setFeeMethod(e.target.value)}><option>Cash</option><option>Bank</option><option>bKash</option><option>Nagad</option><option>Other</option></select></label>
         <label>Receipt number<input value={feeReceipt} onChange={e => setFeeReceipt(e.target.value)} /></label>
         <label>Remarks<input value={feeRemarks} onChange={e => setFeeRemarks(e.target.value)} /></label>
+        {feeType === 'Monthly Fee' && <button type="button" className="button-light" disabled={saving || !feeStudent || !(Number(feeExpected) > 0)} onClick={saveFeeAssessment}>Save fee plan</button>}
         <button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Record payment'}</button>
       </form>
       <h3>Monthly payment status</h3>
