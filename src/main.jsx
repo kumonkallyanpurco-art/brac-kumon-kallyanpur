@@ -65,6 +65,10 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyStudent);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [profileHistory, setProfileHistory] = useState([]);
+  const [profileTab, setProfileTab] = useState('Overview');
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState('Students');
   const [attendanceRows, setAttendanceRows] = useState([]);
@@ -342,6 +346,23 @@ function App() {
     };
   }, [students]);
 
+  async function openStudentProfile(student) {
+    setSelectedProfile(student);
+    setProfileTab('Overview');
+    setProfileHistory([]);
+    setProfileLoading(true);
+    setError('');
+    const { data, error: historyError } = await supabase
+      .from('student_history')
+      .select('id, event_date, event_type, subject, previous_level, new_level, test_level, test_result, previous_class_days, new_class_days, previous_class_time, new_class_time, previous_status, new_status, discontinued_reason_or_transfer_centre, remarks')
+      .eq('student_id', student.id)
+      .order('event_date', { ascending: false })
+      .limit(1000);
+    if (historyError) setError('Could not load student profile history: ' + historyError.message);
+    else setProfileHistory(data || []);
+    setProfileLoading(false);
+  }
+
   async function login(event) {
     event.preventDefault();
     setLoading(true);
@@ -481,14 +502,47 @@ function App() {
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option>All</option><option>Active</option><option>On Hold</option><option>Discontinued</option></select>
         <select value={subjectFilter} onChange={e => setSubjectFilter(e.target.value)}><option>All</option><option>Math</option><option>English</option><option>Both</option></select>
       </div>
-      <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student name</th><th>Subject</th><th>Class schedule</th><th>Status</th>{isAdmin && <th>Action</th>}</tr></thead>
-        <tbody>{filteredStudents.map(student => <tr key={student.id}><td className="id-cell">{student.student_id}</td><td><strong>{student.full_name}</strong><small className="mobile-sub">{student.school_class || ''}</small></td><td>{student.subject}</td><td>{student.current_class_days || student.class_days || '—'}<small className="table-sub">{formatClassTime(student.current_class_time || student.class_time)}</small></td><td><span className={'status-pill ' + String(student.current_status || 'Active').toLowerCase().replace(' ', '-')}>{student.current_status || 'Active'}</span></td>{isAdmin && <td><button className="text-button" onClick={() => openEditStudent(student)}>Edit</button></td>}</tr>)}</tbody>
+      <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student name</th><th>Subject</th><th>Class schedule</th><th>Status</th><th>Profile / Action</th></tr></thead>
+        <tbody>{filteredStudents.map(student => <tr key={student.id}><td className="id-cell">{student.student_id}</td><td><strong>{student.full_name}</strong><small className="mobile-sub">{student.school_class || ''}</small></td><td>{student.subject}</td><td>{student.current_class_days || student.class_days || '—'}<small className="table-sub">{formatClassTime(student.current_class_time || student.class_time)}</small></td><td><span className={'status-pill ' + String(student.current_status || 'Active').toLowerCase().replace(' ', '-')}>{student.current_status || 'Active'}</span></td><td><button className="text-button" onClick={() => openStudentProfile(student)}>View profile</button>{isAdmin && <> · <button className="text-button" onClick={() => openEditStudent(student)}>Edit</button></>}</td></tr>)}</tbody>
       </table>
       {!loading && filteredStudents.length === 0 && <div className="empty-state"><strong>No student records found</strong><span>{students.length ? 'Try changing your search or filters.' : 'Add your first student to get started.'}</span></div>}
       {loading && <div className="empty-state">Loading records…</div>}
       </div>
       <div className="table-footer">Showing {filteredStudents.length} of {students.length} students</div>
 
+    </section>}
+
+    {selectedProfile && activeTab === 'Students' && <section className="content-card student-profile-card">
+      <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><h2>{selectedProfile.full_name}</h2><p className="muted">Student ID: {selectedProfile.student_id} · {selectedProfile.subject}</p></div><button className="button-light compact" onClick={() => setSelectedProfile(null)}>Back to directory</button></div>
+      <div className="profile-tabs">{['Overview','Learning Progress','Achievement Tests','Full History'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}</div>
+      {profileLoading && <div className="empty-state">Loading student history…</div>}
+      {!profileLoading && profileTab === 'Overview' && <div className="profile-detail-grid">
+        {[
+          ['Student ID', selectedProfile.student_id], ['Student Name', selectedProfile.full_name], ['Subject at Enrollment', selectedProfile.subject],
+          ['Admission Date', selectedProfile.admission_date], ['Class Start Date', selectedProfile.class_start_date], ['School Class', selectedProfile.school_class],
+          ['Medium', selectedProfile.medium], ['Consent From', selectedProfile.consent_from], ['ZnZn', selectedProfile.znzn],
+          ['Enrolled Class Days', selectedProfile.class_days], ['Current Class Days', selectedProfile.current_class_days || selectedProfile.class_days],
+          ['Enrolled Class Time', formatClassTime(selectedProfile.class_time)], ['Current Class Time', formatClassTime(selectedProfile.current_class_time || selectedProfile.class_time)],
+          ['Current Status', selectedProfile.current_status || selectedProfile.enrollment_status || 'Active'], ['Status Effective Date', selectedProfile.status_effective_date],
+          ['Stop Billing From', selectedProfile.stop_billing_from], ['No Fee / Exempt', selectedProfile.no_fee ? 'Yes' : 'No'],
+          ['Not counted in subject totals', selectedProfile.exclude_from_subject_totals ? 'Yes' : 'No'], ['Remarks', selectedProfile.remarks]
+        ].map(([label,value]) => <div className="profile-detail" key={label}><small>{label}</small><strong>{value || '—'}</strong></div>)}
+      </div>}
+      {!profileLoading && profileTab === 'Learning Progress' && <div className="profile-detail-grid">
+        <div className="profile-detail"><small>Math Starting Level</small><strong>{selectedProfile.starting_math_level || '—'}</strong></div>
+        <div className="profile-detail"><small>Math Current Level</small><strong>{[...profileHistory].filter(x => x.event_type === 'Level Change' && x.subject === 'Math' && x.new_level).sort((a,b)=>String(b.event_date).localeCompare(String(a.event_date)))[0]?.new_level || selectedProfile.starting_math_level || '—'}</strong></div>
+        <div className="profile-detail"><small>English Starting Level</small><strong>{selectedProfile.starting_english_level || '—'}</strong></div>
+        <div className="profile-detail"><small>English Current Level</small><strong>{[...profileHistory].filter(x => x.event_type === 'Level Change' && x.subject === 'English' && x.new_level).sort((a,b)=>String(b.event_date).localeCompare(String(a.event_date)))[0]?.new_level || selectedProfile.starting_english_level || '—'}</strong></div>
+        <div className="profile-detail"><small>Math Level Changes</small><strong>{profileHistory.filter(x => x.event_type === 'Level Change' && x.subject === 'Math').length}</strong></div>
+        <div className="profile-detail"><small>English Level Changes</small><strong>{profileHistory.filter(x => x.event_type === 'Level Change' && x.subject === 'English').length}</strong></div>
+      </div>}
+      {!profileLoading && profileTab === 'Achievement Tests' && <div className="table-wrap"><table><thead><tr><th>Test Date</th><th>Subject</th><th>Test Level</th><th>Result</th><th>Remarks</th></tr></thead><tbody>
+        {profileHistory.filter(x => x.event_type === 'Achievement Test').map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.subject || '—'}</td><td>{x.test_level || '—'}</td><td>{x.test_result || '—'}</td><td>{x.remarks || '—'}</td></tr>)}
+      </tbody></table>{!profileHistory.some(x => x.event_type === 'Achievement Test') && <div className="empty-state">No achievement tests recorded.</div>}</div>}
+      {!profileLoading && profileTab === 'Full History' && <div className="table-wrap"><table><thead><tr><th>Date</th><th>Event</th><th>Subject</th><th>Previous</th><th>New / Result</th><th>Reason / Remarks</th></tr></thead><tbody>
+        {profileHistory.map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.event_type}</td><td>{x.subject || '—'}</td><td>{x.previous_level || x.previous_class_days || x.previous_status || x.previous_class_time || '—'}</td><td>{x.new_level || x.test_level || x.test_result || x.new_class_days || x.new_status || x.new_class_time || '—'}</td><td>{x.discontinued_reason_or_transfer_centre || x.remarks || '—'}</td></tr>)}
+      </tbody></table>{!profileHistory.length && <div className="empty-state">No history events recorded.</div>}</div>}
+      {isAdmin && <div className="section-actions"><button className="primary-button compact" onClick={() => openEditStudent(selectedProfile)}>Edit student details</button></div>}
     </section>}
 
     {activeTab === 'Attendance' && <section className="content-card">
