@@ -8,7 +8,21 @@ const emptyStudent = {
   class_start_date: '', stop_billing_from: '', class_days: 'Saturday & Tuesday', class_time: '11:00',
   current_status: 'Active', no_fee: false, school_class: '', medium: '', remarks: ''
 };
+const APP_TIME_ZONE = 'Asia/Dhaka';
+const dhakaDateParts = new Intl.DateTimeFormat('en-CA', {
+  timeZone: APP_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit'
+}).formatToParts(new Date()).reduce((parts, part) => ({ ...parts, [part.type]: part.value }), {});
+const todayDhaka = `${dhakaDateParts.year}-${dhakaDateParts.month}-${dhakaDateParts.day}`;
 const times = ['11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
+const formatClassTime = value => {
+  if (!value) return '—';
+  const [hourText, minuteText = '00'] = String(value).slice(0, 5).split(':');
+  const hour = Number(hourText);
+  if (!Number.isFinite(hour) || hour < 0 || hour > 23) return String(value);
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minuteText} ${suffix}`;
+};
 const money = value => new Intl.NumberFormat('en-BD', { maximumFractionDigits: 0 }).format(value || 0);
 
 function getMonthlyFeeDefault(student, month, year, subjectChanges) {
@@ -55,11 +69,11 @@ function App() {
   const [activeTab, setActiveTab] = useState('Students');
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [historyRows, setHistoryRows] = useState([]);
-  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
   const [attendanceStudent, setAttendanceStudent] = useState('');
   const [attendanceValue, setAttendanceValue] = useState('Present');
   const [historyStudent, setHistoryStudent] = useState('');
-  const [historyDate, setHistoryDate] = useState(new Date().toISOString().slice(0, 10));
+  const [historyDate, setHistoryDate] = useState(todayDhaka);
   const [historyType, setHistoryType] = useState('Level Change');
   const [historySubject, setHistorySubject] = useState('Math');
   const [historyPrevious, setHistoryPrevious] = useState('');
@@ -70,7 +84,7 @@ function App() {
   const [subjectChanges, setSubjectChanges] = useState([]);
   const [feeStudent, setFeeStudent] = useState('');
   const [feeType, setFeeType] = useState('Monthly Fee');
-  const [feeDate, setFeeDate] = useState(new Date().toISOString().slice(0, 10));
+  const [feeDate, setFeeDate] = useState(todayDhaka);
   const [feeMonth, setFeeMonth] = useState(String(new Date().getMonth() + 1));
   const [feeYear, setFeeYear] = useState(String(new Date().getFullYear()));
   const [feeAmount, setFeeAmount] = useState('');
@@ -395,7 +409,7 @@ function App() {
     const headers = ['Student ID', 'Student Name', 'Subject', 'Admission Date', 'Class Start Date', 'Class Days', 'Class Time', 'Status'];
     const rows = filteredStudents.map(s => [
       s.student_id, s.full_name, s.subject, s.admission_date || '', s.class_start_date || '',
-      s.current_class_days || s.class_days || '', (s.current_class_time || s.class_time || '').slice(0, 5), s.current_status
+      s.current_class_days || s.class_days || '', (formatClassTime(s.current_class_time || s.class_time)).slice(0, 5), s.current_status
     ]);
     const csv = [headers, ...rows].map(row => row.map(value => '"' + String(value ?? '').replaceAll('"', '""') + '"').join(',')).join('\r\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -451,7 +465,7 @@ function App() {
         <select value={subjectFilter} onChange={e => setSubjectFilter(e.target.value)}><option>All</option><option>Math</option><option>English</option><option>Both</option></select>
       </div>
       <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student name</th><th>Subject</th><th>Class schedule</th><th>Status</th>{isAdmin && <th>Action</th>}</tr></thead>
-        <tbody>{filteredStudents.map(student => <tr key={student.id}><td className="id-cell">{student.student_id}</td><td><strong>{student.full_name}</strong><small className="mobile-sub">{student.school_class || ''}</small></td><td>{student.subject}</td><td>{student.current_class_days || student.class_days || '—'}<small className="table-sub">{(student.current_class_time || student.class_time || '').slice(0, 5)}</small></td><td><span className={'status-pill ' + String(student.current_status || 'Active').toLowerCase().replace(' ', '-')}>{student.current_status || 'Active'}</span></td>{isAdmin && <td><button className="text-button" onClick={() => openEditStudent(student)}>Edit</button></td>}</tr>)}</tbody>
+        <tbody>{filteredStudents.map(student => <tr key={student.id}><td className="id-cell">{student.student_id}</td><td><strong>{student.full_name}</strong><small className="mobile-sub">{student.school_class || ''}</small></td><td>{student.subject}</td><td>{student.current_class_days || student.class_days || '—'}<small className="table-sub">{formatClassTime(student.current_class_time || student.class_time)}</small></td><td><span className={'status-pill ' + String(student.current_status || 'Active').toLowerCase().replace(' ', '-')}>{student.current_status || 'Active'}</span></td>{isAdmin && <td><button className="text-button" onClick={() => openEditStudent(student)}>Edit</button></td>}</tr>)}</tbody>
       </table>
       {!loading && filteredStudents.length === 0 && <div className="empty-state"><strong>No student records found</strong><span>{students.length ? 'Try changing your search or filters.' : 'Add your first student to get started.'}</span></div>}
       {loading && <div className="empty-state">Loading records…</div>}
@@ -535,7 +549,7 @@ function App() {
         <label>Class start date<input type="date" value={form.class_start_date || ''} onChange={e => setForm({...form, class_start_date:e.target.value})} /></label>
         <label>Stop billing from<input type="date" value={form.stop_billing_from || ''} onChange={e => setForm({...form, stop_billing_from:e.target.value})} /></label>
         <label>Class days<select value={form.class_days} onChange={e => setForm({...form, class_days:e.target.value})}><option>Saturday & Tuesday</option><option>Sunday & Wednesday</option></select></label>
-        <label>Class time<select value={form.class_time} onChange={e => setForm({...form, class_time:e.target.value})}>{times.map(time => <option key={time} value={time}>{time}</option>)}</select></label>
+        <label>Class time<select value={form.class_time} onChange={e => setForm({...form, class_time:e.target.value})}>{times.map(time => <option key={time} value={time}>{formatClassTime(time)}</option>)}</select></label>
         <label>School class<input value={form.school_class || ''} onChange={e => setForm({...form, school_class:e.target.value})} /></label>
         <label>Medium<select value={form.medium || ''} onChange={e => setForm({...form, medium:e.target.value})}><option value="">Select</option><option>Bangla</option><option>English</option><option>English Version</option></select></label>
         <label className="full-width">Remarks<textarea rows="3" value={form.remarks || ''} onChange={e => setForm({...form, remarks:e.target.value})} /></label>
