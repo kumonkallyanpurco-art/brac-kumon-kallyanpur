@@ -48,6 +48,7 @@ function App() {
   const [feeMonth, setFeeMonth] = useState(String(new Date().getMonth() + 1));
   const [feeYear, setFeeYear] = useState(String(new Date().getFullYear()));
   const [feeAmount, setFeeAmount] = useState('');
+  const [feePlan, setFeePlan] = useState('Full Month');
   const [feeMethod, setFeeMethod] = useState('Cash');
   const [feeReceipt, setFeeReceipt] = useState('');
   const [feeRemarks, setFeeRemarks] = useState('');
@@ -171,7 +172,8 @@ function App() {
       fee_for_month: feeType === 'Monthly Fee' ? Number(feeMonth) : null,
       fee_for_year: feeType === 'Monthly Fee' ? Number(feeYear) : null,
       amount: Number(feeAmount), method: feeMethod || null,
-      receipt_no: feeReceipt.trim() || null, remarks: feeRemarks.trim() || null,
+      receipt_no: feeReceipt.trim() || null,
+      remarks: [feeType === 'Monthly Fee' ? 'Fee plan: ' + feePlan : 'Enrollment fee', feeRemarks.trim()].filter(Boolean).join(' | ') || null,
       created_by: session.user.id
     };
     const { error: e } = await supabase.from('fee_payments').insert(row);
@@ -387,11 +389,12 @@ function App() {
         <article className="stat-card"><span>Outstanding</span><strong>৳{money(monthlyFeeStats.due)}</strong></article>
       </div>
       <form className="inline-entry-form" onSubmit={saveFee}>
-        <label>Student<select value={feeStudent} onChange={e => setFeeStudent(e.target.value)} required><option value="">Select student</option>{students.map(s=><option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
-        <label>Fee type<select value={feeType} onChange={e => setFeeType(e.target.value)}><option>Monthly Fee</option><option>Enrollment Fee</option></select></label>
+        <label>Student<select value={feeStudent} onChange={e => { const id=e.target.value; setFeeStudent(id); const s=students.find(x=>x.id===id); const both=s?.subject==='Both'; if(feeType==='Monthly Fee' && feePlan!=='Custom') setFeeAmount(feePlan==='Half Month'?(both?'2955':'1650'):(both?'5400':'3000')); }} required><option value="">Select student</option>{students.map(s=><option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
+        <label>Fee type<select value={feeType} onChange={e => { const v=e.target.value; setFeeType(v); setFeeAmount(v==='Enrollment Fee'?'1575':''); }}><option>Monthly Fee</option><option>Enrollment Fee</option></select></label>
+        {feeType === 'Monthly Fee' ? <label>Fee plan<select value={feePlan} onChange={e => { const p=e.target.value; setFeePlan(p); const s=students.find(x=>x.id===feeStudent); const both=s?.subject==='Both'; setFeeAmount(p==='Full Month'?(both?'5400':'3000'):p==='Half Month'?(both?'2955':'1650'):''); }}><option>Full Month</option><option>Half Month</option><option>Custom</option></select></label> : <label>Enrollment fee amount<select value={feeAmount} onChange={e=>setFeeAmount(e.target.value)}><option value="1575">৳1,575 — Discount</option><option value="3300">৳3,300 — Without discount</option></select></label>}
         <label>Payment date<input type="date" value={feeDate} onChange={e => setFeeDate(e.target.value)} required /></label>
         {feeType === 'Monthly Fee' && <><label>Fee for month<select value={feeMonth} onChange={e => setFeeMonth(e.target.value)}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label><label>Fee for year<input type="number" value={feeYear} onChange={e => setFeeYear(e.target.value)} required /></label></>}
-        <label>Amount (৳)<input type="number" min="1" step="0.01" value={feeAmount} onChange={e => setFeeAmount(e.target.value)} required /></label>
+        <label>Amount (৳)<input type="number" min="1" step="0.01" value={feeAmount} onChange={e => {setFeeAmount(e.target.value); if(feeType==='Monthly Fee') setFeePlan('Custom');}} required /></label>
         <label>Payment method<select value={feeMethod} onChange={e => setFeeMethod(e.target.value)}><option>Cash</option><option>Bank</option><option>bKash</option><option>Nagad</option><option>Other</option></select></label>
         <label>Receipt number<input value={feeReceipt} onChange={e => setFeeReceipt(e.target.value)} /></label>
         <label>Remarks<input value={feeRemarks} onChange={e => setFeeRemarks(e.target.value)} /></label>
