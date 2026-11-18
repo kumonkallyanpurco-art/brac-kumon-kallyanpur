@@ -85,8 +85,8 @@ function App() {
   const [feeStudent, setFeeStudent] = useState('');
   const [feeType, setFeeType] = useState('Monthly Fee');
   const [feeDate, setFeeDate] = useState(todayDhaka);
-  const [feeMonth, setFeeMonth] = useState(String(new Date().getMonth() + 1));
-  const [feeYear, setFeeYear] = useState(String(new Date().getFullYear()));
+  const [feeMonth, setFeeMonth] = useState(String(Number(dhakaDateParts.month)));
+  const [feeYear, setFeeYear] = useState(dhakaDateParts.year);
   const [feeAmount, setFeeAmount] = useState('');
   const [feeExpected, setFeeExpected] = useState('');
   const [feePlan, setFeePlan] = useState('Full Month');
