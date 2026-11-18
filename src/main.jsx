@@ -421,7 +421,7 @@ function App() {
       <div className="table-wrap"><table><thead><tr><th>Payment date</th><th>Student ID</th><th>Name</th><th>Fee type</th><th>Fee month</th><th>Amount</th><th>Method</th><th>Receipt</th></tr></thead><tbody>
         {feeRows.map(r=><tr key={r.id}><td>{r.payment_date}</td><td>{r.students?.student_id||'—'}</td><td>{r.students?.full_name||'—'}</td><td>{r.fee_type}</td><td>{r.fee_for_month?new Date(2000,r.fee_for_month-1,1).toLocaleString('en',{month:'short'})+' '+r.fee_for_year:'—'}</td><td>৳{money(r.amount)}</td><td>{r.method||'—'}</td><td>{r.receipt_no||'—'}</td></tr>)}
       </tbody></table>{!feeRows.length && <div className="empty-state">No payment records found.</div>}</div>
-      <p className="muted fee-note">Current estimate uses VAT-exclusive monthly rates: ৳3,000 for one subject and ৳5,400 for both. No-fee students are excluded. Half-month or individually adjusted fees should be checked against the actual agreed amount before recording a payment.</p>
+      <p className="muted fee-note">Expected fees use approved VAT-exclusive rates. Half-month plans are reflected when recorded as Half Month. Custom plans and individual adjustments are not yet calculated automatically; verify their agreed amount separately. Keep the same fee plan selected for every partial payment in the same month.</p>
     </section>}
     {showForm && isAdmin && <div className="modal-backdrop" role="presentation"><form className="student-modal" onSubmit={saveStudent}>
       <div className="modal-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2>{editingId ? 'Edit student' : 'Add student'}</h2></div><button type="button" className="close-button" onClick={() => setShowForm(false)}>×</button></div>
