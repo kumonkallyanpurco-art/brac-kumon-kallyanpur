@@ -710,7 +710,7 @@ function App() {
         </div>
 
         <div className="dashboard-section-title"><div><p className="eyebrow">FINANCIAL UPDATE</p><h2>{dashboardMonthLabel}</h2></div></div>
-        <div className="stat-grid dashboard-stats">
+        <div className="stat-grid dashboard-stats dashboard-financial-stats">
           <article className="stat-card"><span>Full Month Income</span><strong>৳{money(dashboardMonthlyIncome)}</strong><small>Total received from both fee types</small></article>
           <article className="stat-card"><span>Monthly Fee</span><strong>৳{money(dashboardMonthlyFeeIncome)}</strong><small>Received this month</small></article>
           <article className="stat-card"><span>Enrollment Fee</span><strong>৳{money(dashboardEnrollmentFeeIncome)}</strong><small>Received this month</small></article>
