@@ -164,3 +164,9 @@ td strong{color:#203b4c}
  .dashboard-day-income>div{width:100%}
  .dashboard-day-income>strong{font-size:22px}
 }
+
+/* Compact dashboard date and time strip */
+.dashboard-clock-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 14px;margin:0 0 18px;background:#e8f7fd;border:1px solid #d4edf7;border-radius:10px;color:#123b5d}
+.dashboard-clock-date{font-size:12px;font-weight:600;color:#426477}
+.dashboard-clock-bar .dashboard-clock{font-size:17px;letter-spacing:0;font-weight:750;color:#087eae}
+@media(max-width:600px){.dashboard-clock-bar{padding:8px 11px}.dashboard-clock-date{font-size:10px}.dashboard-clock-bar .dashboard-clock{font-size:15px}}
