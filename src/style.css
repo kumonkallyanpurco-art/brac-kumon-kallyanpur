@@ -199,3 +199,69 @@ td strong{color:#203b4c}
 /* Full-bleed mobile header */
 @media(max-width:600px){.app-main .topbar{width:calc(100% + 28px);margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}}
 @media(min-width:601px) and (max-width:900px){.app-main .topbar{width:calc(100% + 40px);margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px}}
+
+
+/* Kumon-inspired brand palette and true edge-to-edge mobile header */
+:root{
+  --kumon-blue:#0066b3;
+  --kumon-deep:#004b87;
+  --kumon-red:#e2231a;
+  --kumon-sky:#eaf5fc;
+  --kumon-line:#d5e7f4;
+}
+.brand-mark{background:var(--kumon-blue)!important}
+.primary-button{background:var(--kumon-blue)!important}
+.primary-button:hover{background:var(--kumon-deep)!important}
+.text-button{color:var(--kumon-blue)!important}
+.sidebar-link.active{background:var(--kumon-blue)!important;border-color:var(--kumon-blue)!important}
+.app-main .topbar{
+  background:#fff;
+  border-bottom:3px solid var(--kumon-blue);
+  box-shadow:0 3px 12px rgba(0,75,135,.08);
+}
+.app-main .topbar:after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:-3px;
+  width:56px;
+  height:3px;
+  background:var(--kumon-red);
+}
+.dashboard-clock-bar{
+  background:linear-gradient(100deg,var(--kumon-blue),#168acb)!important;
+  border:0!important;
+  color:#fff!important;
+}
+.dashboard-clock-date,.dashboard-clock-bar .dashboard-clock{
+  color:#fff!important;
+}
+.dashboard-section-title .eyebrow{color:var(--kumon-blue)!important}
+.dashboard-section-title h2{color:var(--kumon-deep)!important}
+.dashboard-stats .stat-card{border-top-color:var(--kumon-blue)!important}
+.dashboard-stats .stat-card strong{color:var(--kumon-deep)!important}
+.stat-card strong{color:var(--kumon-deep)}
+.live-indicator{color:var(--kumon-blue)!important;background:var(--kumon-sky)!important}
+.live-indicator:before{background:var(--kumon-red)!important}
+@media(max-width:900px){
+  .app-main .topbar{
+    width:100vw;
+    max-width:none;
+    margin-left:calc(50% - 50vw);
+    margin-right:0;
+    padding-left:20px;
+    padding-right:20px;
+    border-radius:0;
+  }
+}
+@media(max-width:600px){
+  .app-main .topbar{
+    width:100vw;
+    margin-left:calc(50% - 50vw);
+    margin-right:0;
+    padding-left:14px;
+    padding-right:14px;
+    min-height:70px;
+    border-radius:0;
+  }
+}
