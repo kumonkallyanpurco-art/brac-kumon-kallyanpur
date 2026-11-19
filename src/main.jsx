@@ -684,6 +684,7 @@ function App() {
     <header className="topbar">
       <button type="button" className="mobile-menu-button" aria-label="Open navigation menu" onClick={() => setSidebarOpen(v => !v)}>☰</button>
       <div className="brand-lockup"><div className="brand-mark small">BK</div><div><strong>BRAC Kumon</strong><span>Kallyanpur Center</span></div></div>
+      <div className="topbar-date-time"><span>{dashboardDateLabel}</span><strong>{dashboardTimeLabel}</strong></div>
       <div className="top-actions"><span className="user-chip">{profile?.full_name || session.user.email} · {isAdmin ? 'Admin' : 'Instructor'}</span><button className="button-light" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
     </header>
 
