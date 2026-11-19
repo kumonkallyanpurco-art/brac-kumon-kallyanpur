@@ -203,8 +203,10 @@ function App() {
     setDashboardDataLoading(true);
     const [incomeResult, selectedDayIncomeResult, expenseResult, attendanceResult] = await Promise.all([
       supabase.from('fee_payments').select('id, payment_date, fee_type, amount')
+        .in('fee_type', ['Monthly Fee', 'Enrollment Fee'])
         .gte('payment_date', dashboardMonthStart).lte('payment_date', dashboardMonthEnd),
       supabase.from('fee_payments').select('id, amount')
+        .in('fee_type', ['Monthly Fee', 'Enrollment Fee'])
         .eq('payment_date', dashboardDate),
       supabase.from('expense_records').select('id, expense_date, amount')
         .gte('expense_date', dashboardMonthStart).lte('expense_date', dashboardMonthEnd),
