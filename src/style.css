@@ -21,3 +21,44 @@
 .employee-entry-form{margin-top:16px}
 .employee-form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px;align-items:center}
 @media(max-width:760px){.employee-form-actions{grid-column:auto;flex-wrap:wrap}}
+
+
+/* Responsive application sidebar navigation */
+.app-layout.workspace{display:grid;grid-template-columns:250px minmax(0,1fr);gap:0;max-width:none;min-height:100vh;margin:0;padding:0;background:#f5f7f5}
+.app-sidebar{position:sticky;top:0;height:100vh;min-height:100vh;background:#172f50;color:#fff;padding:25px 16px 18px;display:flex;flex-direction:column;z-index:20}
+.sidebar-brand{display:flex;align-items:center;gap:12px;padding:0 8px 28px;border-bottom:1px solid #ffffff20}
+.sidebar-brand .brand-mark{width:42px;height:42px;min-width:42px;margin:0;border-radius:12px;background:#fff;color:#173f72;font-size:15px}
+.sidebar-brand strong,.sidebar-brand span{display:block}
+.sidebar-brand strong{font:800 13px Manrope;color:#fff}
+.sidebar-brand span{font-size:11px;color:#b9c8dc;margin-top:4px}
+.sidebar-label{margin:27px 10px 10px;color:#91a8c5;font-size:10px;font-weight:800;letter-spacing:1.5px}
+.sidebar-nav{display:flex;flex-direction:column;gap:6px}
+.sidebar-link{display:flex;align-items:center;gap:13px;width:100%;border:0;border-radius:10px;padding:12px 13px;background:transparent;color:#d6e0ed;text-align:left;font-size:13px;font-weight:600;transition:background .15s ease,color .15s ease}
+.sidebar-link:hover{background:#ffffff12;color:#fff}
+.sidebar-link.active{background:#fff;color:#173f72;box-shadow:0 5px 14px #08182c30}
+.sidebar-icon{display:grid;place-items:center;width:22px;height:22px;font-size:17px;font-weight:700}
+.sidebar-bottom{display:flex;align-items:center;gap:9px;margin-top:auto;padding:14px 10px 4px;color:#aebed2;font-size:11px}
+.sidebar-online-dot{width:7px;height:7px;border-radius:50%;background:#48c78e;box-shadow:0 0 0 4px #48c78e20}
+.app-main{min-width:0;width:100%;max-width:1600px;margin:0 auto;padding:0 30px}
+.app-main .topbar{position:relative}
+.mobile-menu-button{display:none;border:1px solid #dce6df;background:#fff;color:#173f72;border-radius:9px;width:40px;height:40px;font-size:20px;line-height:1}
+.sidebar-scrim{display:none}
+@media(max-width:900px){
+  .app-layout.workspace{display:block}
+  .app-sidebar{position:fixed;left:0;top:0;width:260px;max-width:82vw;transform:translateX(-105%);transition:transform .22s ease;box-shadow:12px 0 35px #07162930}
+  .app-sidebar.sidebar-open{transform:translateX(0)}
+  .sidebar-scrim{display:block;position:fixed;inset:0;z-index:19;border:0;background:#0b1b2d75}
+  .mobile-menu-button{display:inline-grid;place-items:center;flex:0 0 40px}
+  .app-main{padding:0 20px}
+  .topbar{justify-content:flex-start}
+  .topbar .brand-lockup{flex:1}
+  .top-actions{margin-left:auto}
+}
+@media(max-width:600px){
+  .app-main{padding:0 14px}
+  .app-main .topbar{gap:9px;min-height:70px}
+  .app-main .brand-lockup strong{font-size:12px}
+  .app-main .brand-lockup span{font-size:10px}
+  .app-main .brand-mark.small{width:36px;height:36px;min-width:36px}
+  .app-main .page-heading{padding:23px 0 17px}
+}
