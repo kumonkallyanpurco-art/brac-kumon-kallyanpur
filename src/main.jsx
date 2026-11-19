@@ -720,7 +720,7 @@ function App() {
         </div>
         {dashboardDataLoading && <p className="muted dashboard-loading">Updating dashboard figures…</p>}
       </>}
-    </section>
+    </section>}
 
 
     {activeTab === 'Students' && <section className="content-card">
