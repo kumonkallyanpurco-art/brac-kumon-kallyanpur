@@ -183,3 +183,14 @@ td strong{color:#203b4c}
 .topbar-date-time span{font-size:11px;font-weight:600;white-space:nowrap}
 .topbar-date-time strong{font-size:15px;font-weight:800;letter-spacing:.2px;color:#087eae;font-variant-numeric:tabular-nums}
 @media(max-width:760px){.topbar-date-time{min-width:0;flex:1;margin:0 8px;align-items:flex-start;text-align:left}.topbar-date-time span{font-size:9px;white-space:normal}.topbar-date-time strong{font-size:13px}.top-actions{gap:6px}.user-chip{display:none}}
+
+
+/* Keep the original header layout; center the clock without shifting the brand/actions */
+.app-main .topbar{position:sticky;top:0;z-index:50;background:#fff;isolation:isolate}
+.app-main .topbar-date-time{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;min-width:0;width:max-content;pointer-events:none}
+@media(max-width:760px){
+ .app-main .topbar{min-height:70px}
+ .app-main .topbar-date-time{left:50%;max-width:34%;align-items:center;text-align:center}
+ .app-main .topbar-date-time span{font-size:9px;white-space:normal;line-height:1.2}
+ .app-main .topbar-date-time strong{font-size:12px}
+}
