@@ -133,3 +133,34 @@ td strong{color:#203b4c}
 .error-box{background:#fff0ef;color:#a72a23}
 .success-box{background:#e8f7ed;color:#267347}
 @media(max-width:900px){.app-sidebar{box-shadow:12px 0 35px #092b4035}}
+
+
+/* Dashboard overview */
+.dashboard-overview{padding-bottom:8px}
+.dashboard-clock-card{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 28px;margin:0 0 28px;background:linear-gradient(115deg,#173f72,#00a9e0);border-radius:18px;color:#fff;box-shadow:0 12px 30px #173f721c}
+.dashboard-clock-card .eyebrow{color:#c8eaff}
+.dashboard-clock-card h2{font-size:21px;margin:0 0 5px;font-weight:750}
+.dashboard-clock-card span{font-size:12px;color:#d9f1ff}
+.dashboard-clock{font-size:clamp(27px,4vw,42px);font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dashboard-section-title{display:flex;align-items:center;justify-content:space-between;margin:25px 0 12px}
+.dashboard-section-title .eyebrow{color:#00a0d6;margin-bottom:5px}
+.dashboard-section-title h2{font-size:17px;color:#173f72;margin:0;font-weight:750}
+.dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:20px}
+.dashboard-stats .stat-card{border-top:3px solid #00a9e0}
+.dashboard-stats .stat-card strong{color:#173f72}
+.dashboard-date-tag{font-size:11px;color:#526d89;background:#eaf6fc;border-radius:8px;padding:7px 10px}
+.dashboard-day-income{display:flex;align-items:center;gap:18px;padding:18px 20px;background:#fff;border:1px solid #dceaf2;border-radius:14px}
+.dashboard-day-income>div{flex:1}
+.dashboard-day-income .eyebrow{color:#00a0d6;margin-bottom:4px}
+.dashboard-day-income h3{margin:0;color:#173f72;font-size:15px}
+.dashboard-day-income label{display:flex;align-items:center;gap:8px;font-size:11px;color:#62758a;white-space:nowrap}
+.dashboard-day-income input{padding:9px;border:1px solid #d6e3ed;border-radius:8px;color:#263f58;background:#fff}
+.dashboard-day-income>strong{font-size:22px;color:#087eaa;white-space:nowrap}
+.dashboard-loading{margin-top:10px}
+@media(max-width:600px){
+ .dashboard-clock-card{padding:20px;align-items:flex-start;flex-direction:column;gap:14px}
+ .dashboard-clock{font-size:32px}
+ .dashboard-day-income{align-items:flex-start;flex-direction:column;gap:12px}
+ .dashboard-day-income>div{width:100%}
+ .dashboard-day-income>strong{font-size:22px}
+}
