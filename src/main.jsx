@@ -103,6 +103,7 @@ function App() {
   const [clockNow, setClockNow] = useState(() => new Date());
   const [dashboardDate, setDashboardDate] = useState(todayDhaka);
   const [dashboardIncomeRows, setDashboardIncomeRows] = useState([]);
+  const [dashboardSelectedDayIncomeAmount, setDashboardSelectedDayIncomeAmount] = useState(0);
   const [dashboardExpenseRows, setDashboardExpenseRows] = useState([]);
   const [dashboardEmployeeAttendance, setDashboardEmployeeAttendance] = useState([]);
   const [dashboardDataLoading, setDashboardDataLoading] = useState(false);
@@ -200,23 +201,27 @@ function App() {
   const loadDashboardData = useCallback(async () => {
     if (!session || !isAdmin) return;
     setDashboardDataLoading(true);
-    const [incomeResult, expenseResult, attendanceResult] = await Promise.all([
-      supabase.from('income_records').select('id, income_date, amount')
-        .gte('income_date', dashboardMonthStart).lte('income_date', dashboardMonthEnd),
+    const [incomeResult, selectedDayIncomeResult, expenseResult, attendanceResult] = await Promise.all([
+      supabase.from('fee_payments').select('id, payment_date, fee_type, amount')
+        .gte('payment_date', dashboardMonthStart).lte('payment_date', dashboardMonthEnd),
+      supabase.from('fee_payments').select('id, amount')
+        .eq('payment_date', dashboardDate),
       supabase.from('expense_records').select('id, expense_date, amount')
         .gte('expense_date', dashboardMonthStart).lte('expense_date', dashboardMonthEnd),
       supabase.from('employee_attendance')
         .select('employee_id, attendance_status, employees!inner(status)')
         .eq('attendance_date', dashboardToday)
     ]);
-    if (incomeResult.error) setError('Could not load dashboard income: ' + incomeResult.error.message);
+    if (incomeResult.error) setError('Could not load monthly fee income: ' + incomeResult.error.message);
     else setDashboardIncomeRows(incomeResult.data || []);
+    if (selectedDayIncomeResult.error) setError('Could not load selected-day fee income: ' + selectedDayIncomeResult.error.message);
+    else setDashboardSelectedDayIncomeAmount((selectedDayIncomeResult.data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0));
     if (expenseResult.error) setError('Could not load dashboard expenses: ' + expenseResult.error.message);
     else setDashboardExpenseRows(expenseResult.data || []);
     if (attendanceResult.error) setError('Could not load employee attendance summary: ' + attendanceResult.error.message);
     else setDashboardEmployeeAttendance((attendanceResult.data || []).filter(row => row.employees?.status === 'Active'));
     setDashboardDataLoading(false);
-  }, [session, isAdmin, dashboardMonthStart, dashboardMonthEnd, dashboardToday]);
+  }, [session, isAdmin, dashboardMonthStart, dashboardMonthEnd, dashboardToday, dashboardDate]);
 
   useEffect(() => {
     if (activeTab === 'Dashboard' && isAdmin) loadDashboardData();
@@ -429,9 +434,7 @@ function App() {
     .reduce((total, student) => total + (student.subject === 'Both' ? 2 : (student.subject === 'Math' || student.subject === 'English' ? 1 : 0)), 0);
   const dashboardMonthlyIncome = dashboardIncomeRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
   const dashboardMonthlyExpense = dashboardExpenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
-  const dashboardSelectedDayIncome = dashboardIncomeRows
-    .filter(row => row.income_date === dashboardDate)
-    .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const dashboardSelectedDayIncome = dashboardSelectedDayIncomeAmount;
   const dashboardPresentCount = dashboardEmployeeAttendance
     .filter(row => String(row.attendance_status || '').toLowerCase() === 'present').length;
   const dashboardLeaveCount = dashboardEmployeeAttendance
@@ -678,8 +681,8 @@ function App() {
 
 
     {activeTab === 'Dashboard' && <section className="dashboard-overview">
-      <div className="dashboard-clock-card">
-        <div><p className="eyebrow">CENTER OVERVIEW</p><h2>{dashboardDateLabel}</h2><span>Bangladesh Standard Time · Dhaka</span></div>
+      <div className="dashboard-clock-bar">
+        <span className="dashboard-clock-date">{dashboardDateLabel}</span>
         <strong className="dashboard-clock">{dashboardTimeLabel}</strong>
       </div>
 
@@ -698,12 +701,12 @@ function App() {
 
         <div className="dashboard-section-title"><div><p className="eyebrow">FINANCIAL UPDATE</p><h2>{dashboardMonthLabel}</h2></div></div>
         <div className="stat-grid dashboard-stats">
-          <article className="stat-card"><span>Full Month Income</span><strong>৳{money(dashboardMonthlyIncome)}</strong><small>Recorded income this month</small></article>
+          <article className="stat-card"><span>Full Month Income</span><strong>৳{money(dashboardMonthlyIncome)}</strong><small>Monthly Fee + Enrollment Fee received</small></article>
           <article className="stat-card"><span>Full Month Expense</span><strong>৳{money(dashboardMonthlyExpense)}</strong><small>Recorded expenses this month</small></article>
         </div>
         <div className="dashboard-day-income">
           <div><p className="eyebrow">DAILY INCOME</p><h3>Income on selected date</h3></div>
-          <label>Date <input type="date" value={dashboardDate} min={dashboardMonthStart} max={dashboardMonthEnd} onChange={event => setDashboardDate(event.target.value)} /></label>
+          <label>Date <input type="date" value={dashboardDate} onChange={event => setDashboardDate(event.target.value)} /></label>
           <strong>৳{money(dashboardSelectedDayIncome)}</strong>
         </div>
         {dashboardDataLoading && <p className="muted dashboard-loading">Updating financial and attendance figures…</p>}
