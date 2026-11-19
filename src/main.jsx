@@ -98,6 +98,16 @@ function App() {
   const [feeMethod, setFeeMethod] = useState('Cash');
   const [feeReceipt, setFeeReceipt] = useState('');
   const [feeRemarks, setFeeRemarks] = useState('');
+  const [employees, setEmployees] = useState([]);
+  const [employeeSearch, setEmployeeSearch] = useState('');
+  const [employeeStatusFilter, setEmployeeStatusFilter] = useState('All');
+  const [employeeFormOpen, setEmployeeFormOpen] = useState(false);
+  const [editingEmployeeId, setEditingEmployeeId] = useState(null);
+  const [employeeForm, setEmployeeForm] = useState({
+    employee_code: '', full_name: '', designation: '', joining_date: '',
+    monthly_salary: '', office_start_time: '10:00', office_end_time: '18:00',
+    status: 'Active', phone: '', remarks: ''
+  });
 
 
   const isAdmin = profile?.role === 'admin';
@@ -134,6 +144,17 @@ function App() {
       return;
     }
     setProfile(profileData);
+    if (profileData.role === 'admin') {
+      const { data: employeeData, error: employeeError } = await supabase
+        .from('employees')
+        .select('id, employee_code, full_name, designation, joining_date, monthly_salary, office_start_time, office_end_time, status, phone, remarks')
+        .order('full_name', { ascending: true })
+        .limit(500);
+      if (employeeError) setError('Could not load employees: ' + employeeError.message);
+      else setEmployees(employeeData || []);
+    } else {
+      setEmployees([]);
+    }
     const { data, error: studentsError } = await supabase
       .from('students')
       .select('id, student_id, full_name, subject, admission_date, class_start_date, stop_billing_from, status_effective_date, class_days, class_time, current_class_days, current_class_time, current_status, enrollment_status, school_class, medium, remarks, no_fee, consent_from, znzn, starting_math_level, starting_english_level, exclude_from_subject_totals')
@@ -445,6 +466,89 @@ function App() {
     }
   }
 
+  const filteredEmployees = useMemo(() => employees.filter(employee => {
+    const query = employeeSearch.trim().toLowerCase();
+    const matchesSearch = !query || [employee.employee_code, employee.full_name, employee.designation, employee.phone]
+      .some(value => String(value || '').toLowerCase().includes(query));
+    return matchesSearch && (employeeStatusFilter === 'All' || employee.status === employeeStatusFilter);
+  }), [employees, employeeSearch, employeeStatusFilter]);
+
+  function openNewEmployee() {
+    setEditingEmployeeId(null);
+    setEmployeeForm({
+      employee_code: '', full_name: '', designation: '', joining_date: '',
+      monthly_salary: '', office_start_time: '10:00', office_end_time: '18:00',
+      status: 'Active', phone: '', remarks: ''
+    });
+    setEmployeeFormOpen(true);
+    setError('');
+    setNotice('');
+  }
+
+  function openEditEmployee(employee) {
+    setEditingEmployeeId(employee.id);
+    setEmployeeForm({
+      employee_code: employee.employee_code || '',
+      full_name: employee.full_name || '',
+      designation: employee.designation || '',
+      joining_date: employee.joining_date || '',
+      monthly_salary: String(employee.monthly_salary ?? ''),
+      office_start_time: (employee.office_start_time || '10:00').slice(0, 5),
+      office_end_time: (employee.office_end_time || '18:00').slice(0, 5),
+      status: employee.status || 'Active',
+      phone: employee.phone || '',
+      remarks: employee.remarks || ''
+    });
+    setEmployeeFormOpen(true);
+    setError('');
+    setNotice('');
+  }
+
+  async function saveEmployee(event) {
+    event.preventDefault();
+    if (!isAdmin || saving) return;
+    const employeeCode = (employeeForm.employee_code || '').trim();
+    const fullName = (employeeForm.full_name || '').trim();
+    if (!employeeCode || !fullName) {
+      setError('Employee ID and Employee Name are required.');
+      return;
+    }
+    if (employeeForm.monthly_salary === '' || Number(employeeForm.monthly_salary) < 0 || !Number.isFinite(Number(employeeForm.monthly_salary))) {
+      setError('Enter a valid monthly salary (0 or more).');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      const payload = {
+        employee_code: employeeCode,
+        full_name: fullName,
+        designation: (employeeForm.designation || '').trim() || null,
+        joining_date: employeeForm.joining_date || null,
+        monthly_salary: Number(employeeForm.monthly_salary),
+        office_start_time: employeeForm.office_start_time || null,
+        office_end_time: employeeForm.office_end_time || null,
+        status: employeeForm.status || 'Active',
+        phone: (employeeForm.phone || '').trim() || null,
+        remarks: (employeeForm.remarks || '').trim() || null
+      };
+      const result = editingEmployeeId
+        ? await supabase.from('employees').update(payload).eq('id', editingEmployeeId).select('id').maybeSingle()
+        : await supabase.from('employees').insert(payload).select('id').single();
+      if (result.error) throw result.error;
+      if (!result.data?.id) throw new Error('No employee record was saved. Please refresh and try again.');
+      setNotice(editingEmployeeId ? 'Employee details updated successfully.' : 'Employee added successfully.');
+      setEmployeeFormOpen(false);
+      setEditingEmployeeId(null);
+      await loadData();
+    } catch (err) {
+      setError('Could not save employee: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function exportCsv() {
     const headers = ['Student ID', 'Student Name', 'Subject', 'Admission Date', 'Class Start Date', 'Class Days', 'Class Time', 'Status'];
     const rows = filteredStudents.map(s => [
@@ -486,7 +590,7 @@ function App() {
 
 
     <nav className="tab-nav">
-      {['Students', 'Attendance', 'History', ...(isAdmin ? ['Fees'] : [])].map(tab => <button type="button" key={tab} className={activeTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => { setActiveTab(tab); setError(''); setNotice(''); }}>{tab}</button>)}
+      {['Students', 'Attendance', 'History', ...(isAdmin ? ['Fees', 'Employees'] : [])].map(tab => <button type="button" key={tab} className={activeTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => { setActiveTab(tab); setError(''); setNotice(''); }}>{tab}</button>)}
     </nav>
     <section className="stat-grid">
       <article className="stat-card"><span>Total students</span><strong>{stats.total}</strong><small>Registered records</small></article>
@@ -592,6 +696,41 @@ function App() {
       </tbody></table>{!historyRows.length && <div className="empty-state">No history events found.</div>}</div>
     </section>}
 
+
+    {activeTab === 'Employees' && isAdmin && <section className="content-card">
+      <div className="section-heading">
+        <div><p className="eyebrow">TEAM MANAGEMENT</p><h2>Employee directory</h2><p className="muted">Manage employee master records, office schedule and monthly salary.</p></div>
+        <div className="section-actions"><button className="primary-button compact" onClick={openNewEmployee}>+ Add employee</button></div>
+      </div>
+      <div className="filters">
+        <input className="search-input" placeholder="Search by Employee ID, name, designation or phone…" value={employeeSearch} onChange={e => setEmployeeSearch(e.target.value)} />
+        <select value={employeeStatusFilter} onChange={e => setEmployeeStatusFilter(e.target.value)}><option>All</option><option>Active</option><option>Inactive</option></select>
+      </div>
+      {employeeFormOpen && <form className="inline-entry-form employee-entry-form" onSubmit={saveEmployee}>
+        <label>Employee ID<input value={employeeForm.employee_code} onChange={e => setEmployeeForm(v => ({...v, employee_code:e.target.value}))} placeholder="EMP-001" required /></label>
+        <label>Employee Name<input value={employeeForm.full_name} onChange={e => setEmployeeForm(v => ({...v, full_name:e.target.value}))} required /></label>
+        <label>Designation<input value={employeeForm.designation} onChange={e => setEmployeeForm(v => ({...v, designation:e.target.value}))} /></label>
+        <label>Joining Date<input type="date" value={employeeForm.joining_date} onChange={e => setEmployeeForm(v => ({...v, joining_date:e.target.value}))} /></label>
+        <label>Monthly Salary (৳)<input type="number" min="0" step="0.01" value={employeeForm.monthly_salary} onChange={e => setEmployeeForm(v => ({...v, monthly_salary:e.target.value}))} required /></label>
+        <label>Office In Time<input type="time" value={employeeForm.office_start_time} onChange={e => setEmployeeForm(v => ({...v, office_start_time:e.target.value}))} /></label>
+        <label>Office Out Time<input type="time" value={employeeForm.office_end_time} onChange={e => setEmployeeForm(v => ({...v, office_end_time:e.target.value}))} /></label>
+        <label>Employee Status<select value={employeeForm.status} onChange={e => setEmployeeForm(v => ({...v, status:e.target.value}))}><option>Active</option><option>Inactive</option></select></label>
+        <label>Phone<input type="tel" value={employeeForm.phone} onChange={e => setEmployeeForm(v => ({...v, phone:e.target.value}))} /></label>
+        <label className="full-width">Remarks<input value={employeeForm.remarks} onChange={e => setEmployeeForm(v => ({...v, remarks:e.target.value}))} /></label>
+        <div className="employee-form-actions"><button type="button" className="button-light" onClick={() => {setEmployeeFormOpen(false);setEditingEmployeeId(null);}}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Saving…' : editingEmployeeId ? 'Update employee' : 'Save employee'}</button></div>
+      </form>}
+      <div className="table-wrap"><table><thead><tr><th>Employee ID</th><th>Employee Name</th><th>Designation</th><th>Joining Date</th><th>Office Time</th><th>Monthly Salary</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>{filteredEmployees.map(employee => <tr key={employee.id}>
+          <td className="id-cell">{employee.employee_code || '—'}</td><td><strong>{employee.full_name}</strong><small className="mobile-sub">{employee.phone || ''}</small></td><td>{employee.designation || '—'}</td><td>{employee.joining_date || '—'}</td>
+          <td>{employee.office_start_time ? formatClassTime(employee.office_start_time) : '—'} – {employee.office_end_time ? formatClassTime(employee.office_end_time) : '—'}</td>
+          <td>৳{money(employee.monthly_salary)}</td><td><span className={'status-pill ' + (employee.status === 'Active' ? 'active' : 'discontinued')}>{employee.status || 'Active'}</span></td>
+          <td><button className="text-button" onClick={() => openEditEmployee(employee)}>Edit</button></td>
+        </tr>)}</tbody></table>
+        {!loading && filteredEmployees.length === 0 && <div className="empty-state"><strong>No employee records found</strong><span>{employees.length ? 'Try changing your search or status filter.' : 'Add your first employee to get started.'}</span></div>}
+        {loading && <div className="empty-state">Loading employee records…</div>}
+      </div>
+      <div className="table-footer">Showing {filteredEmployees.length} of {employees.length} employees. Inactive employees remain saved for historical attendance and salary records.</div>
+    </section>}
 
     {activeTab === 'Fees' && isAdmin && <section className="content-card">
       <div className="section-heading"><div><p className="eyebrow">PAYMENT MANAGEMENT</p><h2>Monthly fee management</h2><p className="muted">Record full or partial payments. Payment date and fee month are stored separately.</p></div></div>
