@@ -71,7 +71,7 @@ function App() {
   const [profileTab, setProfileTab] = useState('Overview');
   const [profileLoading, setProfileLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState('Students');
+  const [activeTab, setActiveTab] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [historyRows, setHistoryRows] = useState([]);
@@ -584,6 +584,7 @@ function App() {
       <p className="sidebar-label">MAIN MENU</p>
       <nav className="sidebar-nav">
         {[
+          {tab:'Dashboard', icon:'⌂', label:'Dashboard'},
           {tab:'Students', icon:'▦', label:'Students'},
           {tab:'Attendance', icon:'✓', label:'Attendance'},
           {tab:'History', icon:'↻', label:'History'},
@@ -602,13 +603,13 @@ function App() {
       <div className="top-actions"><span className="user-chip">{profile?.full_name || session.user.email} · {isAdmin ? 'Admin' : 'Instructor'}</span><button className="button-light" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
     </header>
 
-    <section className="page-heading"><div><p className="eyebrow">CENTER MANAGEMENT</p><h1>Dashboard</h1><p className="muted">Student records and center operations in one place.</p></div><span className="live-indicator">Online database</span></section>
+    {activeTab === 'Dashboard' && <section className="page-heading"><div><p className="eyebrow">CENTER MANAGEMENT</p><h1>Dashboard</h1><p className="muted">Student records and center operations in one place.</p></div><span className="live-indicator">Online database</span></section>}
 
     {error && <div className="alert error-box">{error}</div>}
     {notice && <div className="alert success-box">{notice}</div>}
 
 
-    <section className="stat-grid">
+    {activeTab === 'Dashboard' && <section className="stat-grid">
       <article className="stat-card"><span>Total students</span><strong>{stats.total}</strong><small>Registered records</small></article>
       <article className="stat-card"><span>Active students</span><strong>{stats.active}</strong><small>Currently enrolled</small></article>
       <article className="stat-card"><span>On hold</span><strong>{stats.onHold}</strong><small>Temporarily paused</small></article>
@@ -617,7 +618,8 @@ function App() {
       <article className="stat-card"><span>English enrollments</span><strong>{stats.english}</strong><small>Includes Both subjects</small></article>
       <article className="stat-card"><span>Both subjects</span><strong>{stats.both}</strong><small>Math + English</small></article>
       <article className="stat-card"><span>Total subject count</span><strong>{stats.totalSubjects}</strong><small>Math + English enrollments combined</small></article>
-    </section>
+    </section>}
+
 
     {activeTab === 'Students' && <section className="content-card">
       <div className="section-heading"><div><p className="eyebrow">STUDENT MANAGEMENT</p><h2>Student directory</h2><p className="muted">{isAdmin ? 'Add, update and manage student records.' : 'View student and classroom information.'}</p></div>
