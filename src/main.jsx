@@ -72,6 +72,7 @@ function App() {
   const [profileLoading, setProfileLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState('Students');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [historyRows, setHistoryRows] = useState([]);
   const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
@@ -577,8 +578,26 @@ function App() {
     <p className="login-foot">Authorized center staff only</p>
   </form></main>;
 
-  return <main className="workspace">
+  return <main className="workspace app-layout">
+    <aside className={sidebarOpen ? 'app-sidebar sidebar-open' : 'app-sidebar'}>
+      <div className="sidebar-brand"><div className="brand-mark">BK</div><div><strong>BRAC Kumon</strong><span>Kallyanpur Center</span></div></div>
+      <p className="sidebar-label">MAIN MENU</p>
+      <nav className="sidebar-nav">
+        {[
+          {tab:'Students', icon:'▦', label:'Students'},
+          {tab:'Attendance', icon:'✓', label:'Attendance'},
+          {tab:'History', icon:'↻', label:'History'},
+          ...(isAdmin ? [{tab:'Fees',icon:'৳',label:'Fees'},{tab:'Employees',icon:'♙',label:'Employees'}] : [])
+        ].map(item => <button type="button" key={item.tab} className={activeTab === item.tab ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab(item.tab);setSidebarOpen(false);setError('');setNotice('');}}>
+          <span className="sidebar-icon">{item.icon}</span><span>{item.label}</span>
+        </button>)}
+      </nav>
+      <div className="sidebar-bottom"><span className="sidebar-online-dot"></span> Online workspace</div>
+    </aside>
+    {sidebarOpen && <button className="sidebar-scrim" aria-label="Close menu" onClick={() => setSidebarOpen(false)} />}
+    <div className="app-main">
     <header className="topbar">
+      <button type="button" className="mobile-menu-button" aria-label="Open navigation menu" onClick={() => setSidebarOpen(v => !v)}>☰</button>
       <div className="brand-lockup"><div className="brand-mark small">BK</div><div><strong>BRAC Kumon</strong><span>Kallyanpur Center</span></div></div>
       <div className="top-actions"><span className="user-chip">{profile?.full_name || session.user.email} · {isAdmin ? 'Admin' : 'Instructor'}</span><button className="button-light" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
     </header>
@@ -589,9 +608,6 @@ function App() {
     {notice && <div className="alert success-box">{notice}</div>}
 
 
-    <nav className="tab-nav">
-      {['Students', 'Attendance', 'History', ...(isAdmin ? ['Fees', 'Employees'] : [])].map(tab => <button type="button" key={tab} className={activeTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => { setActiveTab(tab); setError(''); setNotice(''); }}>{tab}</button>)}
-    </nav>
     <section className="stat-grid">
       <article className="stat-card"><span>Total students</span><strong>{stats.total}</strong><small>Registered records</small></article>
       <article className="stat-card"><span>Active students</span><strong>{stats.active}</strong><small>Currently enrolled</small></article>
@@ -790,6 +806,7 @@ function App() {
       <div className="modal-actions"><button type="button" className="button-light" onClick={() => setShowForm(false)}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save student'}</button></div>
     </form></div>}
     <footer className="app-footer">BRAC Kumon Kallyanpur Center <span>·</span> Secure online workspace</footer>
+    </div>
   </main>;
 }
 
