@@ -100,6 +100,12 @@ function App() {
   const [feeReceipt, setFeeReceipt] = useState('');
   const [feeRemarks, setFeeRemarks] = useState('');
   const [employees, setEmployees] = useState([]);
+  const [clockNow, setClockNow] = useState(() => new Date());
+  const [dashboardDate, setDashboardDate] = useState(todayDhaka);
+  const [dashboardIncomeRows, setDashboardIncomeRows] = useState([]);
+  const [dashboardExpenseRows, setDashboardExpenseRows] = useState([]);
+  const [dashboardEmployeeAttendance, setDashboardEmployeeAttendance] = useState([]);
+  const [dashboardDataLoading, setDashboardDataLoading] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [employeeStatusFilter, setEmployeeStatusFilter] = useState('All');
   const [employeeFormOpen, setEmployeeFormOpen] = useState(false);
@@ -112,6 +118,29 @@ function App() {
 
 
   const isAdmin = profile?.role === 'admin';
+
+  useEffect(() => {
+    const timer = setInterval(() => setClockNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const dashboardToday = new Intl.DateTimeFormat('en-CA', {
+    timeZone: APP_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(clockNow);
+  const dashboardMonthStart = dashboardToday.slice(0, 8) + '01';
+  const dashboardMonthEnd = (() => {
+    const [year, month] = dashboardToday.split('-').map(Number);
+    return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+  })();
+  const dashboardMonthLabel = new Intl.DateTimeFormat('en', {
+    timeZone: APP_TIME_ZONE, month: 'long', year: 'numeric'
+  }).format(clockNow);
+  const dashboardDateLabel = new Intl.DateTimeFormat('en-GB', {
+    timeZone: APP_TIME_ZONE, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  }).format(clockNow);
+  const dashboardTimeLabel = new Intl.DateTimeFormat('en-GB', {
+    timeZone: APP_TIME_ZONE, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+  }).format(clockNow);
 
   useEffect(() => {
     if (!supabase) return;
@@ -167,6 +196,31 @@ function App() {
   }, [session]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const loadDashboardData = useCallback(async () => {
+    if (!session || !isAdmin) return;
+    setDashboardDataLoading(true);
+    const [incomeResult, expenseResult, attendanceResult] = await Promise.all([
+      supabase.from('income_records').select('id, income_date, amount')
+        .gte('income_date', dashboardMonthStart).lte('income_date', dashboardMonthEnd),
+      supabase.from('expense_records').select('id, expense_date, amount')
+        .gte('expense_date', dashboardMonthStart).lte('expense_date', dashboardMonthEnd),
+      supabase.from('employee_attendance')
+        .select('employee_id, attendance_status, employees!inner(status)')
+        .eq('attendance_date', dashboardToday)
+    ]);
+    if (incomeResult.error) setError('Could not load dashboard income: ' + incomeResult.error.message);
+    else setDashboardIncomeRows(incomeResult.data || []);
+    if (expenseResult.error) setError('Could not load dashboard expenses: ' + expenseResult.error.message);
+    else setDashboardExpenseRows(expenseResult.data || []);
+    if (attendanceResult.error) setError('Could not load employee attendance summary: ' + attendanceResult.error.message);
+    else setDashboardEmployeeAttendance((attendanceResult.data || []).filter(row => row.employees?.status === 'Active'));
+    setDashboardDataLoading(false);
+  }, [session, isAdmin, dashboardMonthStart, dashboardMonthEnd, dashboardToday]);
+
+  useEffect(() => {
+    if (activeTab === 'Dashboard' && isAdmin) loadDashboardData();
+  }, [activeTab, isAdmin, loadDashboardData]);
 
 
   const loadAttendance = useCallback(async () => {
@@ -368,6 +422,20 @@ function App() {
       totalSubjects: countedStudents.reduce((total, s) => total + (s.subject === 'Both' ? 2 : (s.subject === 'Math' || s.subject === 'English' ? 1 : 0)), 0)
     };
   }, [students]);
+
+  const dashboardActiveStudents = students.filter(student => student.current_status === 'Active');
+  const dashboardSubjectCount = dashboardActiveStudents
+    .filter(student => !student.exclude_from_subject_totals)
+    .reduce((total, student) => total + (student.subject === 'Both' ? 2 : (student.subject === 'Math' || student.subject === 'English' ? 1 : 0)), 0);
+  const dashboardMonthlyIncome = dashboardIncomeRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const dashboardMonthlyExpense = dashboardExpenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const dashboardSelectedDayIncome = dashboardIncomeRows
+    .filter(row => row.income_date === dashboardDate)
+    .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const dashboardPresentCount = dashboardEmployeeAttendance
+    .filter(row => String(row.attendance_status || '').toLowerCase() === 'present').length;
+  const dashboardLeaveCount = dashboardEmployeeAttendance
+    .filter(row => ['leave', 'on leave'].includes(String(row.attendance_status || '').toLowerCase())).length;
 
   async function openStudentProfile(student) {
     setSelectedProfile(student);
@@ -609,15 +677,37 @@ function App() {
     {notice && <div className="alert success-box">{notice}</div>}
 
 
-    {activeTab === 'Dashboard' && <section className="stat-grid">
-      <article className="stat-card"><span>Total students</span><strong>{stats.total}</strong><small>Registered records</small></article>
-      <article className="stat-card"><span>Active students</span><strong>{stats.active}</strong><small>Currently enrolled</small></article>
-      <article className="stat-card"><span>On hold</span><strong>{stats.onHold}</strong><small>Temporarily paused</small></article>
-      <article className="stat-card"><span>Discontinued</span><strong>{stats.discontinued}</strong><small>Inactive records</small></article>
-      <article className="stat-card"><span>Math enrollments</span><strong>{stats.math}</strong><small>Includes Both subjects</small></article>
-      <article className="stat-card"><span>English enrollments</span><strong>{stats.english}</strong><small>Includes Both subjects</small></article>
-      <article className="stat-card"><span>Both subjects</span><strong>{stats.both}</strong><small>Math + English</small></article>
-      <article className="stat-card"><span>Total subject count</span><strong>{stats.totalSubjects}</strong><small>Math + English enrollments combined</small></article>
+    {activeTab === 'Dashboard' && <section className="dashboard-overview">
+      <div className="dashboard-clock-card">
+        <div><p className="eyebrow">CENTER OVERVIEW</p><h2>{dashboardDateLabel}</h2><span>Bangladesh Standard Time · Dhaka</span></div>
+        <strong className="dashboard-clock">{dashboardTimeLabel}</strong>
+      </div>
+
+      <div className="dashboard-section-title"><div><p className="eyebrow">STUDENT DATABASE</p><h2>Student Overview</h2></div></div>
+      <div className="stat-grid dashboard-stats">
+        <article className="stat-card"><span>Active Students</span><strong>{dashboardActiveStudents.length}</strong><small>Currently enrolled</small></article>
+        <article className="stat-card"><span>Total Subject Count</span><strong>{dashboardSubjectCount}</strong><small>Active Math + English enrollments</small></article>
+      </div>
+
+      {isAdmin && <>
+        <div className="dashboard-section-title"><div><p className="eyebrow">EMPLOYEE ATTENDANCE</p><h2>Today's Attendance</h2></div><span className="dashboard-date-tag">{dashboardToday}</span></div>
+        <div className="stat-grid dashboard-stats">
+          <article className="stat-card"><span>Present</span><strong>{dashboardPresentCount}</strong><small>Active employees</small></article>
+          <article className="stat-card"><span>On Leave</span><strong>{dashboardLeaveCount}</strong><small>Active employees</small></article>
+        </div>
+
+        <div className="dashboard-section-title"><div><p className="eyebrow">FINANCIAL UPDATE</p><h2>{dashboardMonthLabel}</h2></div></div>
+        <div className="stat-grid dashboard-stats">
+          <article className="stat-card"><span>Full Month Income</span><strong>৳{money(dashboardMonthlyIncome)}</strong><small>Recorded income this month</small></article>
+          <article className="stat-card"><span>Full Month Expense</span><strong>৳{money(dashboardMonthlyExpense)}</strong><small>Recorded expenses this month</small></article>
+        </div>
+        <div className="dashboard-day-income">
+          <div><p className="eyebrow">DAILY INCOME</p><h3>Income on selected date</h3></div>
+          <label>Date <input type="date" value={dashboardDate} min={dashboardMonthStart} max={dashboardMonthEnd} onChange={event => setDashboardDate(event.target.value)} /></label>
+          <strong>৳{money(dashboardSelectedDayIncome)}</strong>
+        </div>
+        {dashboardDataLoading && <p className="muted dashboard-loading">Updating financial and attendance figures…</p>}
+      </>}
     </section>}
 
 
