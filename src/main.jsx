@@ -101,11 +101,11 @@ function App() {
   const [feeRemarks, setFeeRemarks] = useState('');
   const [employees, setEmployees] = useState([]);
   const [clockNow, setClockNow] = useState(() => new Date());
-  const [dashboardDate, setDashboardDate] = useState(todayDhaka);
   const [dashboardIncomeRows, setDashboardIncomeRows] = useState([]);
-  const [dashboardSelectedDayIncomeAmount, setDashboardSelectedDayIncomeAmount] = useState(0);
   const [dashboardExpenseRows, setDashboardExpenseRows] = useState([]);
   const [dashboardEmployeeAttendance, setDashboardEmployeeAttendance] = useState([]);
+  const [dashboardRoyaltyRecord, setDashboardRoyaltyRecord] = useState(null);
+  const [dashboardRoyaltyRate, setDashboardRoyaltyRate] = useState(0.42);
   const [dashboardDataLoading, setDashboardDataLoading] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [employeeStatusFilter, setEmployeeStatusFilter] = useState('All');
@@ -201,29 +201,32 @@ function App() {
   const loadDashboardData = useCallback(async () => {
     if (!session || !isAdmin) return;
     setDashboardDataLoading(true);
-    const [incomeResult, selectedDayIncomeResult, expenseResult, attendanceResult] = await Promise.all([
+    const [incomeResult, expenseResult, attendanceResult, royaltyResult, settingsResult] = await Promise.all([
       supabase.from('fee_payments').select('id, payment_date, fee_type, amount')
         .in('fee_type', ['Monthly Fee', 'Enrollment Fee'])
         .gte('payment_date', dashboardMonthStart).lte('payment_date', dashboardMonthEnd),
-      supabase.from('fee_payments').select('id, amount')
-        .in('fee_type', ['Monthly Fee', 'Enrollment Fee'])
-        .eq('payment_date', dashboardDate),
       supabase.from('expense_records').select('id, expense_date, amount')
         .gte('expense_date', dashboardMonthStart).lte('expense_date', dashboardMonthEnd),
       supabase.from('employee_attendance')
         .select('employee_id, attendance_status, employees!inner(status)')
-        .eq('attendance_date', dashboardToday)
+        .eq('attendance_date', dashboardToday),
+      supabase.from('royalty_records').select('kumon_amount')
+        .eq('royalty_year', Number(dashboardToday.slice(0, 4)))
+        .eq('royalty_month', Number(dashboardToday.slice(5, 7))).limit(1),
+      supabase.from('center_settings').select('royalty_rate').limit(1).maybeSingle()
     ]);
     if (incomeResult.error) setError('Could not load monthly fee income: ' + incomeResult.error.message);
     else setDashboardIncomeRows(incomeResult.data || []);
-    if (selectedDayIncomeResult.error) setError('Could not load selected-day fee income: ' + selectedDayIncomeResult.error.message);
-    else setDashboardSelectedDayIncomeAmount((selectedDayIncomeResult.data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0));
     if (expenseResult.error) setError('Could not load dashboard expenses: ' + expenseResult.error.message);
     else setDashboardExpenseRows(expenseResult.data || []);
     if (attendanceResult.error) setError('Could not load employee attendance summary: ' + attendanceResult.error.message);
     else setDashboardEmployeeAttendance((attendanceResult.data || []).filter(row => row.employees?.status === 'Active'));
+    if (royaltyResult.error) setError('Could not load Kumon royalty: ' + royaltyResult.error.message);
+    else setDashboardRoyaltyRecord(royaltyResult.data?.[0] || null);
+    if (settingsResult.error) setError('Could not load royalty rate: ' + settingsResult.error.message);
+    else if (settingsResult.data?.royalty_rate != null) setDashboardRoyaltyRate(Number(settingsResult.data.royalty_rate));
     setDashboardDataLoading(false);
-  }, [session, isAdmin, dashboardMonthStart, dashboardMonthEnd, dashboardToday, dashboardDate]);
+  }, [session, isAdmin, dashboardMonthStart, dashboardMonthEnd, dashboardToday]);
 
   useEffect(() => {
     if (activeTab === 'Dashboard' && isAdmin) loadDashboardData();
@@ -434,9 +437,14 @@ function App() {
   const dashboardSubjectCount = dashboardActiveStudents
     .filter(student => !student.exclude_from_subject_totals)
     .reduce((total, student) => total + (student.subject === 'Both' ? 2 : (student.subject === 'Math' || student.subject === 'English' ? 1 : 0)), 0);
-  const dashboardMonthlyIncome = dashboardIncomeRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const dashboardMonthlyFeeIncome = dashboardIncomeRows.filter(row => row.fee_type === 'Monthly Fee').reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const dashboardEnrollmentFeeIncome = dashboardIncomeRows.filter(row => row.fee_type === 'Enrollment Fee').reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const dashboardMonthlyIncome = dashboardMonthlyFeeIncome + dashboardEnrollmentFeeIncome;
+  const dashboardKumonRoyalty = dashboardRoyaltyRecord?.kumon_amount != null
+    ? Number(dashboardRoyaltyRecord.kumon_amount)
+    : dashboardMonthlyIncome * dashboardRoyaltyRate;
+  const dashboardCenterRevenue = dashboardMonthlyIncome - dashboardKumonRoyalty;
   const dashboardMonthlyExpense = dashboardExpenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
-  const dashboardSelectedDayIncome = dashboardSelectedDayIncomeAmount;
   const dashboardPresentCount = dashboardEmployeeAttendance
     .filter(row => String(row.attendance_status || '').toLowerCase() === 'present').length;
   const dashboardLeaveCount = dashboardEmployeeAttendance
@@ -703,13 +711,12 @@ function App() {
 
         <div className="dashboard-section-title"><div><p className="eyebrow">FINANCIAL UPDATE</p><h2>{dashboardMonthLabel}</h2></div></div>
         <div className="stat-grid dashboard-stats">
-          <article className="stat-card"><span>Full Month Income</span><strong>৳{money(dashboardMonthlyIncome)}</strong><small>Monthly Fee + Enrollment Fee received</small></article>
+          <article className="stat-card"><span>Full Month Income</span><strong>৳{money(dashboardMonthlyIncome)}</strong><small>Total received from both fee types</small></article>
+          <article className="stat-card"><span>Monthly Fee</span><strong>৳{money(dashboardMonthlyFeeIncome)}</strong><small>Received this month</small></article>
+          <article className="stat-card"><span>Enrollment Fee</span><strong>৳{money(dashboardEnrollmentFeeIncome)}</strong><small>Received this month</small></article>
+          <article className="stat-card"><span>Kumon Royalty</span><strong>৳{money(dashboardKumonRoyalty)}</strong><small>{dashboardRoyaltyRecord?.kumon_amount != null ? 'Kumon amount entered' : 'Estimated at ' + Math.round(dashboardRoyaltyRate * 100) + '%'}</small></article>
+          <article className="stat-card"><span>Center Revenue</span><strong>৳{money(dashboardCenterRevenue)}</strong><small>Income minus Kumon Royalty</small></article>
           <article className="stat-card"><span>Full Month Expense</span><strong>৳{money(dashboardMonthlyExpense)}</strong><small>Recorded expenses this month</small></article>
-        </div>
-        <div className="dashboard-day-income">
-          <div><p className="eyebrow">DAILY INCOME</p><h3>Income on selected date</h3></div>
-          <label>Date <input type="date" value={dashboardDate} onChange={event => setDashboardDate(event.target.value)} /></label>
-          <strong>৳{money(dashboardSelectedDayIncome)}</strong>
         </div>
         {dashboardDataLoading && <p className="muted dashboard-loading">Updating financial and attendance figures…</p>}
       </>}
