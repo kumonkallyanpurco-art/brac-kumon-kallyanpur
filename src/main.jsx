@@ -693,38 +693,33 @@ function App() {
 
 
     {activeTab === 'Dashboard' && <section className="dashboard-overview">
-      <div className="dashboard-clock-bar">
-        <span className="dashboard-clock-date">{dashboardDateLabel}</span>
-        <strong className="dashboard-clock">{dashboardTimeLabel}</strong>
-      </div>
-
-      <div className="dashboard-section-title"><div><p className="eyebrow">STUDENT DATABASE</p><h2>Student Overview</h2></div></div>
+      <div className="dashboard-section-title"><div><p className="eyebrow">STUDENT DATA</p><h2>Student Overview</h2></div></div>
       <div className="stat-grid dashboard-stats">
         <article className="stat-card"><span>Active Students</span><strong>{dashboardActiveStudents.length}</strong><small>Currently enrolled</small></article>
         <article className="stat-card"><span>Total Subject Count</span><strong>{dashboardSubjectCount}</strong><small>Active Math + English enrollments</small></article>
       </div>
 
       {isAdmin && <>
-        <div className="dashboard-section-title"><div><p className="eyebrow">EMPLOYEE ATTENDANCE</p><h2>Today's Attendance</h2></div><span className="dashboard-date-tag">{dashboardToday}</span></div>
-        <div className="stat-grid dashboard-stats">
-          <article className="stat-card"><span>Present</span><strong>{dashboardPresentCount}</strong><small>Active employees</small></article>
-          <article className="stat-card"><span>On Leave</span><strong>{dashboardLeaveCount}</strong><small>Active employees</small></article>
+        <div className="dashboard-section-title"><div><p className="eyebrow">FINANCIAL UPDATE</p><h2>Financial Overview</h2></div></div>
+        <div className="stat-grid dashboard-stats dashboard-financial-stats">
+          <article className="stat-card"><span>Kumon Royalty</span><strong>৳{money(dashboardKumonRoyalty)}</strong><small>{dashboardRoyaltyRecord?.kumon_amount != null ? 'Kumon amount entered' : 'Estimated at ' + Math.round(dashboardRoyaltyRate * 100) + '%'}</small></article>
+          <article className="stat-card"><span>Center Revenue</span><strong>৳{money(dashboardCenterRevenue)}</strong><small>Monthly income minus Kumon Royalty</small></article>
         </div>
 
-        <div className="dashboard-section-title"><div><p className="eyebrow">TODAY INCOME</p><h2>{dashboardDateLabel}</h2></div><span className="dashboard-date-tag">{dashboardToday}</span></div>
+        <div className="dashboard-section-title"><div><p className="eyebrow">TODAY INCOME</p><h2>Income Summary</h2></div></div>
         <div className="stat-grid dashboard-stats dashboard-today-income">
           <article className="stat-card"><span>Monthly Fee</span><strong>৳{money(dashboardTodayMonthlyFeeIncome)}</strong><small>Received today</small></article>
           <article className="stat-card"><span>Enrollment Fee</span><strong>৳{money(dashboardTodayEnrollmentFeeIncome)}</strong><small>Received today</small></article>
         </div>
 
-        <div className="dashboard-section-title"><div><p className="eyebrow">FINANCIAL UPDATE</p><h2>{dashboardMonthLabel}</h2></div></div>
-        <div className="stat-grid dashboard-stats dashboard-financial-stats">
-          <article className="stat-card"><span>Kumon Royalty</span><strong>৳{money(dashboardKumonRoyalty)}</strong><small>{dashboardRoyaltyRecord?.kumon_amount != null ? 'Kumon amount entered' : 'Estimated at ' + Math.round(dashboardRoyaltyRate * 100) + '%'}</small></article>
-          <article className="stat-card"><span>Center Revenue</span><strong>৳{money(dashboardCenterRevenue)}</strong><small>Monthly income minus Kumon Royalty</small></article>
+        <div className="dashboard-section-title"><div><p className="eyebrow">EMPLOYEE</p><h2>Employee Attendance</h2></div></div>
+        <div className="stat-grid dashboard-stats">
+          <article className="stat-card"><span>Present</span><strong>{dashboardPresentCount}</strong><small>Active employees</small></article>
+          <article className="stat-card"><span>On Leave</span><strong>{dashboardLeaveCount}</strong><small>Active employees</small></article>
         </div>
-        {dashboardDataLoading && <p className="muted dashboard-loading">Updating financial and attendance figures…</p>}
+        {dashboardDataLoading && <p className="muted dashboard-loading">Updating dashboard figures…</p>}
       </>}
-    </section>}
+    </section>
 
 
     {activeTab === 'Students' && <section className="content-card">
