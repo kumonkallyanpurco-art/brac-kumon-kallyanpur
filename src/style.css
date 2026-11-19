@@ -170,3 +170,6 @@ td strong{color:#203b4c}
 .dashboard-clock-date{font-size:12px;font-weight:600;color:#426477}
 .dashboard-clock-bar .dashboard-clock{font-size:17px;letter-spacing:0;font-weight:750;color:#087eae}
 @media(max-width:600px){.dashboard-clock-bar{padding:8px 11px}.dashboard-clock-date{font-size:10px}.dashboard-clock-bar .dashboard-clock{font-size:15px}}
+
+.dashboard-financial-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:760px){.dashboard-financial-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
