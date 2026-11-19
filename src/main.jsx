@@ -1,3 +1,4 @@
+// Dashboard refresh: remove visible date/time labels; keep date logic internal.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { supabase } from './lib/supabase';
