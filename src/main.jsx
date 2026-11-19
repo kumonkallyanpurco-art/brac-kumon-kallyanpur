@@ -102,6 +102,7 @@ function App() {
   const [employees, setEmployees] = useState([]);
   const [clockNow, setClockNow] = useState(() => new Date());
   const [dashboardIncomeRows, setDashboardIncomeRows] = useState([]);
+  const [dashboardTodayIncomeRows, setDashboardTodayIncomeRows] = useState([]);
   const [dashboardExpenseRows, setDashboardExpenseRows] = useState([]);
   const [dashboardEmployeeAttendance, setDashboardEmployeeAttendance] = useState([]);
   const [dashboardRoyaltyRecord, setDashboardRoyaltyRecord] = useState(null);
@@ -201,12 +202,12 @@ function App() {
   const loadDashboardData = useCallback(async () => {
     if (!session || !isAdmin) return;
     setDashboardDataLoading(true);
-    const [incomeResult, expenseResult, attendanceResult, royaltyResult, settingsResult] = await Promise.all([
+    const [incomeResult, todayIncomeResult, attendanceResult, royaltyResult, settingsResult] = await Promise.all([
       supabase.from('fee_payments').select('id, payment_date, fee_type, amount')
         .in('fee_type', ['Monthly Fee', 'Enrollment Fee'])
         .gte('payment_date', dashboardMonthStart).lte('payment_date', dashboardMonthEnd),
-      supabase.from('expense_records').select('id, expense_date, amount')
-        .gte('expense_date', dashboardMonthStart).lte('expense_date', dashboardMonthEnd),
+      supabase.from('fee_payments').select('id, payment_date, fee_type, amount')
+        .in('fee_type', ['Monthly Fee', 'Enrollment Fee']).eq('payment_date', dashboardToday),
       supabase.from('employee_attendance')
         .select('employee_id, attendance_status, employees!inner(status)')
         .eq('attendance_date', dashboardToday),
@@ -217,8 +218,8 @@ function App() {
     ]);
     if (incomeResult.error) setError('Could not load monthly fee income: ' + incomeResult.error.message);
     else setDashboardIncomeRows(incomeResult.data || []);
-    if (expenseResult.error) setError('Could not load dashboard expenses: ' + expenseResult.error.message);
-    else setDashboardExpenseRows(expenseResult.data || []);
+    if (todayIncomeResult.error) setError('Could not load today income: ' + todayIncomeResult.error.message);
+    else setDashboardTodayIncomeRows(todayIncomeResult.data || []);
     if (attendanceResult.error) setError('Could not load employee attendance summary: ' + attendanceResult.error.message);
     else setDashboardEmployeeAttendance((attendanceResult.data || []).filter(row => row.employees?.status === 'Active'));
     if (royaltyResult.error) setError('Could not load Kumon royalty: ' + royaltyResult.error.message);
@@ -440,11 +441,12 @@ function App() {
   const dashboardMonthlyFeeIncome = dashboardIncomeRows.filter(row => row.fee_type === 'Monthly Fee').reduce((sum, row) => sum + Number(row.amount || 0), 0);
   const dashboardEnrollmentFeeIncome = dashboardIncomeRows.filter(row => row.fee_type === 'Enrollment Fee').reduce((sum, row) => sum + Number(row.amount || 0), 0);
   const dashboardMonthlyIncome = dashboardMonthlyFeeIncome + dashboardEnrollmentFeeIncome;
+  const dashboardTodayMonthlyFeeIncome = dashboardTodayIncomeRows.filter(row => row.fee_type === 'Monthly Fee').reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const dashboardTodayEnrollmentFeeIncome = dashboardTodayIncomeRows.filter(row => row.fee_type === 'Enrollment Fee').reduce((sum, row) => sum + Number(row.amount || 0), 0);
   const dashboardKumonRoyalty = dashboardRoyaltyRecord?.kumon_amount != null
     ? Number(dashboardRoyaltyRecord.kumon_amount)
     : dashboardMonthlyIncome * dashboardRoyaltyRate;
   const dashboardCenterRevenue = dashboardMonthlyIncome - dashboardKumonRoyalty;
-  const dashboardMonthlyExpense = dashboardExpenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
   const dashboardPresentCount = dashboardEmployeeAttendance
     .filter(row => String(row.attendance_status || '').toLowerCase() === 'present').length;
   const dashboardLeaveCount = dashboardEmployeeAttendance
@@ -709,14 +711,16 @@ function App() {
           <article className="stat-card"><span>On Leave</span><strong>{dashboardLeaveCount}</strong><small>Active employees</small></article>
         </div>
 
+        <div className="dashboard-section-title"><div><p className="eyebrow">TODAY INCOME</p><h2>{dashboardDateLabel}</h2></div><span className="dashboard-date-tag">{dashboardToday}</span></div>
+        <div className="stat-grid dashboard-stats dashboard-today-income">
+          <article className="stat-card"><span>Monthly Fee</span><strong>৳{money(dashboardTodayMonthlyFeeIncome)}</strong><small>Received today</small></article>
+          <article className="stat-card"><span>Enrollment Fee</span><strong>৳{money(dashboardTodayEnrollmentFeeIncome)}</strong><small>Received today</small></article>
+        </div>
+
         <div className="dashboard-section-title"><div><p className="eyebrow">FINANCIAL UPDATE</p><h2>{dashboardMonthLabel}</h2></div></div>
         <div className="stat-grid dashboard-stats dashboard-financial-stats">
-          <article className="stat-card"><span>Full Month Income</span><strong>৳{money(dashboardMonthlyIncome)}</strong><small>Total received from both fee types</small></article>
-          <article className="stat-card"><span>Monthly Fee</span><strong>৳{money(dashboardMonthlyFeeIncome)}</strong><small>Received this month</small></article>
-          <article className="stat-card"><span>Enrollment Fee</span><strong>৳{money(dashboardEnrollmentFeeIncome)}</strong><small>Received this month</small></article>
           <article className="stat-card"><span>Kumon Royalty</span><strong>৳{money(dashboardKumonRoyalty)}</strong><small>{dashboardRoyaltyRecord?.kumon_amount != null ? 'Kumon amount entered' : 'Estimated at ' + Math.round(dashboardRoyaltyRate * 100) + '%'}</small></article>
-          <article className="stat-card"><span>Center Revenue</span><strong>৳{money(dashboardCenterRevenue)}</strong><small>Income minus Kumon Royalty</small></article>
-          <article className="stat-card"><span>Full Month Expense</span><strong>৳{money(dashboardMonthlyExpense)}</strong><small>Recorded expenses this month</small></article>
+          <article className="stat-card"><span>Center Revenue</span><strong>৳{money(dashboardCenterRevenue)}</strong><small>Monthly income minus Kumon Royalty</small></article>
         </div>
         {dashboardDataLoading && <p className="muted dashboard-loading">Updating financial and attendance figures…</p>}
       </>}
