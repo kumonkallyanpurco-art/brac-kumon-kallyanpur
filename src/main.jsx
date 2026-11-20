@@ -413,7 +413,7 @@ function App() {
 
   const filteredStudents = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return [];
+    if (!query) return students;
     return students.filter(student => String(student.full_name || '').toLowerCase().includes(query));
   }, [students, search]);
 
@@ -719,15 +719,14 @@ function App() {
     {activeTab === 'Students' && <section className="content-card">
       <div className="section-heading"><div><p className="eyebrow">STUDENT MANAGEMENT</p><h2>Student Profile</h2><p className="muted">Search by student name to view an individual student’s details.</p></div></div>
       <div className="student-profile-search">
-        <input className="search-input" placeholder="Type student name to search…" value={search} onChange={e => {setSearch(e.target.value);setSelectedProfile(null);setProfileHistory([]);setProfileAttendance([]);}} />
+        <input className="search-input" placeholder="Search student by name…" value={search} onChange={e => {setSearch(e.target.value);setSelectedProfile(null);setProfileHistory([]);setProfileAttendance([]);}} />
       </div>
-      {!selectedProfile && !search.trim() && <div className="empty-state"><strong>Search for a student</strong><span>Enter the student’s name above. Only matching students will appear.</span></div>}
-      {!selectedProfile && search.trim() && <div className="student-search-results">
+      {!selectedProfile && <div className="student-search-results">
         {filteredStudents.map(student => <div className="student-search-result" key={student.id}>
           <div><strong>{student.full_name}</strong><small>{student.student_id} · {student.subject}</small></div>
-          <button type="button" className="primary-button compact" onClick={() => openStudentProfile(student)}>View details</button>
+          <button type="button" className="primary-button compact" onClick={() => openStudentProfile(student)}>View Details</button>
         </div>)}
-        {!loading && filteredStudents.length === 0 && <div className="empty-state">No student found with that name.</div>}
+        {!loading && filteredStudents.length === 0 && <div className="empty-state">No student found.</div>}
       </div>}
       {loading && <div className="empty-state">Loading student records…</div>}
     </section>}
