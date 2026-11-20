@@ -148,7 +148,8 @@ function App() {
     const attendanceByDate = new Map(profileAttendance.map(row => [String(row.class_date).slice(0, 10), row]));
     const scheduleEvents = profileHistory.filter(row => row.event_type === 'Schedule Change' && row.new_class_days && row.event_date).sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)));
     const statusEvents = profileHistory.filter(row => row.event_type === 'Status Change' && row.new_status && row.event_date).sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)));
-    const initialDays = selectedProfile.current_class_days || selectedProfile.class_days || '';
+    // Use the first recorded previous schedule as the historical baseline, so past months stay accurate.
+    const initialDays = scheduleEvents[0]?.previous_class_days || selectedProfile.class_days || selectedProfile.current_class_days || '';
     const startDate = selectedProfile.class_start_date ? String(selectedProfile.class_start_date).slice(0, 10) : '';
     const rows = [];
     for (let day = 1; day <= lastDay; day += 1) {
@@ -332,9 +333,71 @@ function App() {
     }
     else if (historyType === 'Status Change') { row.previous_status = historyPrevious || null; row.new_status = historyNew || null; }
     else row.discontinued_reason_or_transfer_centre = historyNew || historyPrevious || null;
+    let scheduleStudent = null;
+    let previousSchedule = null;
+    if (historyType === 'Schedule Change') {
+      scheduleStudent = students.find(student => student.id === historyStudent);
+      if (!scheduleStudent) {
+        setError('Could not find the selected student. Please select the student again.');
+        setSaving(false);
+        return;
+      }
+      if (!!historyPreviousDays !== !!historyNewDays) {
+        setError('For class days, enter both Previous Class Days and New Class Days.');
+        setSaving(false);
+        return;
+      }
+      if (!!historyPreviousTime !== !!historyNewTime) {
+        setError('For class time, enter both Previous Class Time and New Class Time.');
+        setSaving(false);
+        return;
+      }
+      previousSchedule = {
+        class_days: scheduleStudent.class_days,
+        current_class_days: scheduleStudent.current_class_days,
+        class_time: scheduleStudent.class_time,
+        current_class_time: scheduleStudent.current_class_time
+      };
+      const scheduleUpdate = {};
+      if (historyNewDays) {
+        scheduleUpdate.class_days = historyNewDays;
+        scheduleUpdate.current_class_days = historyNewDays;
+      }
+      if (historyNewTime) {
+        scheduleUpdate.class_time = historyNewTime;
+        scheduleUpdate.current_class_time = historyNewTime;
+      }
+      const { data: updatedStudent, error: updateError } = await supabase
+        .from('students')
+        .update(scheduleUpdate)
+        .eq('id', historyStudent)
+        .select('id')
+        .maybeSingle();
+      if (updateError || !updatedStudent) {
+        setError('Could not update the student schedule: ' + (updateError?.message || 'Student record was not updated.'));
+        setSaving(false);
+        return;
+      }
+    }
     const { error: e } = await supabase.from('student_history').insert(row);
-    if (e) setError(e.message);
-    else { setNotice('History event added.'); setHistoryStudent(''); setHistoryDate(''); setHistoryType(''); setHistorySubject(''); setHistoryPrevious(''); setHistoryNew(''); setHistoryPreviousDays(''); setHistoryNewDays(''); setHistoryPreviousTime(''); setHistoryNewTime(''); setEntryRemarks(''); }
+    if (e) {
+      setError(e.message);
+      if (scheduleStudent && previousSchedule) {
+        await supabase.from('students').update(previousSchedule).eq('id', historyStudent);
+      }
+    } else {
+      if (scheduleStudent) {
+        const updated = {
+          ...scheduleStudent,
+          ...(historyNewDays ? { class_days: historyNewDays, current_class_days: historyNewDays } : {}),
+          ...(historyNewTime ? { class_time: historyNewTime, current_class_time: historyNewTime } : {})
+        };
+        setStudents(current => current.map(student => student.id === historyStudent ? updated : student));
+        setSelectedProfile(current => current?.id === historyStudent ? updated : current);
+      }
+      setNotice(historyType === 'Schedule Change' ? 'Schedule updated and history saved successfully.' : 'History event added.');
+      setHistoryStudent(''); setHistoryDate(''); setHistoryType(''); setHistorySubject(''); setHistoryPrevious(''); setHistoryNew(''); setHistoryPreviousDays(''); setHistoryNewDays(''); setHistoryPreviousTime(''); setHistoryNewTime(''); setEntryRemarks('');
+    }
     setSaving(false);
   }
 
