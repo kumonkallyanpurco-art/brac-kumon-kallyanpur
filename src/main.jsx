@@ -91,8 +91,6 @@ function App() {
   const [attendanceScheduleHistory, setAttendanceScheduleHistory] = useState([]);
   const [attendanceSavingId, setAttendanceSavingId] = useState('');
   const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
-  const [attendanceStudent, setAttendanceStudent] = useState('');
-  const [attendanceValue, setAttendanceValue] = useState('Present');
   const [historyStudent, setHistoryStudent] = useState('');
   const [historyDate, setHistoryDate] = useState('');
   const [historyType, setHistoryType] = useState('');
@@ -352,7 +350,7 @@ function App() {
     if (saveError) setError('Could not save attendance: ' + saveError.message);
     else {
       setAttendanceRows(current => [...current.filter(row => !(row.student_id === studentId && String(row.class_date).slice(0, 10) === attendanceDate)), data]);
-      setProfileAttendance(current => [...current.filter(row => !(row.student_id === studentId && String(row.class_date).slice(0, 10) === attendanceDate)), data]);
+      if (selectedProfile?.id === studentId) setProfileAttendance(current => [...current.filter(row => !(row.student_id === studentId && String(row.class_date).slice(0, 10) === attendanceDate)), data]);
       setNotice('Attendance saved successfully.');
     }
     setAttendanceSavingId('');
