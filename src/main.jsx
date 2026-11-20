@@ -67,7 +67,7 @@ function App() {
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [profileHistory, setProfileHistory] = useState([]);
   const [profileAttendance, setProfileAttendance] = useState([]);
-  const [profileTab, setProfileTab] = useState('Overview');
+  const [profileTab, setProfileTab] = useState(() => { try { return window.localStorage.getItem('brac-kumon-profile-tab') || 'Overview'; } catch { return 'Overview'; } });
   const [profileLoading, setProfileLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState(() => {
@@ -76,6 +76,7 @@ function App() {
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentMenuOpen, setStudentMenuOpen] = useState(false);
+  useEffect(() => { try { window.localStorage.setItem('brac-kumon-profile-tab', profileTab); } catch { /* storage may be unavailable */ } }, [profileTab]);
   useEffect(() => {
     try { window.localStorage.setItem('brac-kumon-active-tab', activeTab); }
     catch { /* storage may be unavailable */ }
@@ -458,6 +459,7 @@ function App() {
 
   async function openStudentProfile(student) {
     setSelectedProfile(student);
+    try { window.localStorage.setItem('brac-kumon-selected-student', student.id); } catch { /* storage may be unavailable */ }
     setProfileTab('Overview');
     setProfileHistory([]);
     setProfileAttendance([]);
@@ -477,6 +479,15 @@ function App() {
     else setProfileAttendance(attendanceResult.data || []);
     setProfileLoading(false);
   }
+
+  useEffect(() => {
+    if (activeTab !== 'Students' || selectedProfile || !students.length) return;
+    let savedId = null;
+    try { savedId = window.localStorage.getItem('brac-kumon-selected-student'); } catch { /* storage may be unavailable */ }
+    const savedStudent = savedId ? students.find(student => student.id === savedId) : null;
+    if (savedStudent) openStudentProfile(savedStudent);
+  }, [activeTab, students, selectedProfile]);
+
 
   async function login(event) {
     event.preventDefault();
@@ -664,7 +675,7 @@ function App() {
           </button>
           {studentMenuOpen && <div className="sidebar-submenu">
             {isAdmin && <button type="button" className={activeTab === 'AddStudent' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('AddStudent');setSidebarOpen(false);openNewStudent();}}><span className="submenu-icon add-student-icon">＋</span><span>Add Student</span></button>}
-            <button type="button" className={activeTab === 'Students' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Students');setSidebarOpen(false);setError('');setNotice('');setSelectedProfile(null);}}><span className="submenu-icon">◎</span><span>Student Profile</span></button>
+            <button type="button" className={activeTab === 'Students' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Students');setSidebarOpen(false);setError('');setNotice('');setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}}}><span className="submenu-icon">◎</span><span>Student Profile</span></button>
             {isAdmin && <button type="button" className={activeTab === 'Fees' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Fees');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">৳</span><span>Fees</span></button>}
             <button type="button" className={activeTab === 'Attendance' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Attendance');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">✓</span><span>Attendance</span></button>
           </div>}
@@ -726,7 +737,7 @@ function App() {
     {activeTab === 'Students' && !selectedProfile && <section className="content-card">
       <div className="section-heading"><div><p className="eyebrow">STUDENT MANAGEMENT</p><h2>Student Profile</h2><p className="muted">Search by student name to view an individual student’s details.</p></div></div>
       <div className="student-profile-search">
-        <input className="search-input" placeholder="Search student by name…" value={search} onChange={e => {setSearch(e.target.value);setSelectedProfile(null);setProfileHistory([]);setProfileAttendance([]);}} />
+        <input className="search-input" placeholder="Search student by name…" value={search} onChange={e => {setSearch(e.target.value);setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}setProfileHistory([]);setProfileAttendance([]);}} />
       </div>
       {!selectedProfile && <div className="student-search-results">
         {filteredStudents.map(student => <div className="student-search-result" key={student.id}>
@@ -739,7 +750,7 @@ function App() {
     </section>}
 
     {selectedProfile && activeTab === 'Students' && <section className="content-card student-profile-card">
-      <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><h2>{selectedProfile.full_name}</h2><p className="muted">Student ID: {selectedProfile.student_id} · {selectedProfile.subject}</p></div><button className="button-light compact" onClick={() => setSelectedProfile(null)}>Back to directory</button></div>
+      <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><span className={'status-pill ' + (selectedProfile.current_status === 'Active' ? 'active' : 'discontinued')}>{selectedProfile.current_status || 'Inactive'}</span></div><button className="button-light compact" onClick={() => {setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}}}>Back</button></div>
       <div className="profile-tabs">{['Overview','Class Schedule','Learning Progress','Achievement Test','Attendance'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}</div>
       {profileLoading && <div className="empty-state">Loading student history…</div>}
       {!profileLoading && profileTab === 'Overview' && <div className="profile-detail-grid">
