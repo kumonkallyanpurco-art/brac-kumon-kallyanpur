@@ -281,3 +281,15 @@ td strong{color:#203b4c}
 /* Add Student navigation item */
 .sidebar-sublink .add-student-icon{background:#e2231a;color:#fff;font-size:18px;box-shadow:0 2px 7px #0002}
 .sidebar-sublink.active .add-student-icon{background:#e2231a;color:#fff}
+
+
+/* Focused student-name search and individual result cards */
+.student-profile-search{max-width:680px;margin:18px 0 22px}
+.student-profile-search .search-input{width:100%;min-height:48px;padding:13px 16px;border:1px solid #cbddea;border-radius:12px;background:#fff;font-size:14px;box-shadow:0 3px 12px rgba(0,75,135,.05)}
+.student-profile-search .search-input:focus{outline:2px solid #b9ddf5;border-color:#0066b3}
+.student-search-results{display:flex;flex-direction:column;gap:10px;max-width:780px}
+.student-search-result{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid #d5e7f4;border-radius:12px;background:#fff}
+.student-search-result>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.student-search-result strong{color:#004b87;font-size:14px}
+.student-search-result small{color:#647b90;font-size:11px}
+@media(max-width:600px){.student-search-result{padding:12px;gap:8px}.student-search-result .primary-button{white-space:nowrap}}
