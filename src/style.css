@@ -945,3 +945,65 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
   .student-profile-card .attendance-stat-card{padding:10px 8px;gap:7px}
   .student-profile-card .attendance-stat-card strong{font-size:20px}
 }
+
+
+/* Daily student attendance register */
+.attendance-date-control{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  padding:15px 17px;margin:15px 0;background:#f4fbfe;border:1px solid #dcecf3;border-radius:13px;
+}
+.attendance-date-control label{display:flex;flex-direction:column;gap:7px;color:#476477;font-size:12px;font-weight:700;min-width:190px}
+.attendance-date-control input,.attendance-roster-status select{
+  min-height:40px;padding:9px 12px;border:1px solid #d5e5ed;border-radius:9px;
+  background:#fff;color:#29495b;font:inherit;font-size:13px;
+}
+.attendance-date-label{font-size:13px;font-weight:700;color:#123b5d;padding-bottom:11px}
+.attendance-roster-summary{
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:14px 0 22px;
+}
+.attendance-roster-summary>div{
+  display:flex;flex-direction:column;gap:5px;padding:12px 13px;background:#fff;
+  border:1px solid #e0ebf1;border-radius:11px;min-width:0;
+}
+.attendance-roster-summary span{font-size:10px;color:#718a98;font-weight:650}
+.attendance-roster-summary strong{font-size:21px;color:#123b5d;font-variant-numeric:tabular-nums}
+.attendance-roster-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px}
+.attendance-roster-heading h3{margin:0;font-size:15px}
+.attendance-roster-heading>span{font-size:11px;color:#78909d}
+.attendance-roster-list{display:flex;flex-direction:column;gap:8px}
+.attendance-roster-row{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;
+  border:1px solid #e2edf2;border-radius:11px;min-width:0;
+}
+.attendance-roster-number{
+  flex:0 0 27px;width:27px;height:27px;display:grid;place-items:center;border-radius:8px;
+  background:#e8f7fd;color:#087eae;font-size:11px;font-weight:800;
+}
+.attendance-roster-student{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.attendance-roster-student strong{font-size:13px;color:#203f52;overflow-wrap:anywhere}
+.attendance-roster-student small{font-size:10px;color:#78909d}
+.attendance-roster-status{display:flex;align-items:center;gap:7px;flex:0 0 155px;justify-content:flex-end}
+.attendance-roster-status select{width:100%;font-weight:700;cursor:pointer}
+.attendance-roster-status select:focus{outline:none;border-color:#00a9e0;box-shadow:0 0 0 3px rgba(0,169,224,.12)}
+.attendance-roster-status select:disabled{opacity:.65;cursor:wait}
+.attendance-saving-label{font-size:10px;color:#087eae;white-space:nowrap}
+.attendance-register-note{margin:15px 0 0;color:#78909d;font-size:11px;line-height:1.5}
+@media(max-width:600px){
+ .attendance-date-control{align-items:stretch;flex-direction:column;gap:8px;padding:13px}
+ .attendance-date-control label{min-width:0;width:100%}
+ .attendance-date-label{padding:0}
+ .attendance-roster-summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ .attendance-roster-summary>div{padding:10px}
+ .attendance-roster-summary strong{font-size:19px}
+ .attendance-roster-row{gap:8px;padding:10px}
+ .attendance-roster-number{flex-basis:24px;width:24px;height:24px}
+ .attendance-roster-student strong{font-size:12px}
+ .attendance-roster-status{flex-basis:128px}
+ .attendance-roster-status select{min-height:38px;padding:8px;font-size:11px}
+}
+@media(max-width:380px){
+ .attendance-roster-row{flex-wrap:wrap}
+ .attendance-roster-student{flex-basis:calc(100% - 42px)}
+ .attendance-roster-status{flex:1 1 100%;margin-left:32px}
+ .attendance-roster-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
