@@ -61,8 +61,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [subjectFilter, setSubjectFilter] = useState('All');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyStudent);
@@ -413,14 +411,11 @@ function App() {
     return acc;
   }, { expected: 0, received: 0, due: 0 });
 
-  const filteredStudents = useMemo(() => students.filter(student => {
+  const filteredStudents = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const matchesSearch = !query || [student.student_id, student.full_name, student.subject]
-      .some(value => String(value || '').toLowerCase().includes(query));
-    return matchesSearch &&
-      (statusFilter === 'All' || student.current_status === statusFilter) &&
-      (subjectFilter === 'All' || student.subject === subjectFilter);
-  }), [students, search, statusFilter, subjectFilter]);
+    if (!query) return [];
+    return students.filter(student => String(student.full_name || '').toLowerCase().includes(query));
+  }, [students, search]);
 
   const stats = useMemo(() => {
     const countedStudents = students.filter(s => !s.exclude_from_subject_totals);
@@ -636,22 +631,6 @@ function App() {
     }
   }
 
-  function exportCsv() {
-    const headers = ['Student ID', 'Student Name', 'Subject', 'Admission Date', 'Class Start Date', 'Class Days', 'Class Time', 'Status'];
-    const rows = filteredStudents.map(s => [
-      s.student_id, s.full_name, s.subject, s.admission_date || '', s.class_start_date || '',
-      s.current_class_days || s.class_days || '', (formatClassTime(s.current_class_time || s.class_time)).slice(0, 5), s.current_status
-    ]);
-    const csv = [headers, ...rows].map(row => row.map(value => '"' + String(value ?? '').replaceAll('"', '""') + '"').join(',')).join('\r\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'BRAC-Kumon-Students.csv';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
   if (!supabase) return <main className="center"><section className="panel"><div className="brand-mark">BK</div><h1>BRAC Kumon Kallyanpur Center</h1><p>Supabase connection settings are missing from the hosting environment.</p></section></main>;
 
   if (!session) return <main className="login-page"><form className="login-card" onSubmit={login}>
@@ -738,22 +717,19 @@ function App() {
 
 
     {activeTab === 'Students' && <section className="content-card">
-      <div className="section-heading"><div><p className="eyebrow">STUDENT MANAGEMENT</p><h2>Student directory</h2><p className="muted">{isAdmin ? 'Add, update and manage student records.' : 'View student and classroom information.'}</p></div>
-        <div className="section-actions"><button className="button-light compact" onClick={exportCsv}>Export CSV</button></div>
+      <div className="section-heading"><div><p className="eyebrow">STUDENT MANAGEMENT</p><h2>Student Profile</h2><p className="muted">Search by student name to view an individual student’s details.</p></div></div>
+      <div className="student-profile-search">
+        <input className="search-input" placeholder="Type student name to search…" value={search} onChange={e => {setSearch(e.target.value);setSelectedProfile(null);setProfileHistory([]);setProfileAttendance([]);}} />
       </div>
-      <div className="filters">
-        <input className="search-input" placeholder="Search student by name or ID…" value={search} onChange={e => setSearch(e.target.value)} />
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option>All</option><option>Active</option><option>On Hold</option><option>Discontinued</option></select>
-        <select value={subjectFilter} onChange={e => setSubjectFilter(e.target.value)}><option>All</option><option>Math</option><option>English</option><option>Both</option></select>
-      </div>
-      <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student name</th><th>Subject</th><th>Class schedule</th><th>Status</th><th>Profile / Action</th></tr></thead>
-        <tbody>{filteredStudents.map(student => <tr key={student.id}><td className="id-cell">{student.student_id}</td><td><strong>{student.full_name}</strong><small className="mobile-sub">{student.school_class || ''}</small></td><td>{student.subject}</td><td>{student.current_class_days || student.class_days || '—'}<small className="table-sub">{formatClassTime(student.current_class_time || student.class_time)}</small></td><td><span className={'status-pill ' + String(student.current_status || 'Active').toLowerCase().replace(' ', '-')}>{student.current_status || 'Active'}</span></td><td><button className="text-button" onClick={() => openStudentProfile(student)}>View profile</button>{isAdmin && <> · <button className="text-button" onClick={() => openEditStudent(student)}>Edit</button></>}</td></tr>)}</tbody>
-      </table>
-      {!loading && filteredStudents.length === 0 && <div className="empty-state"><strong>No student records found</strong><span>{students.length ? 'Try changing your search or filters.' : 'Add your first student to get started.'}</span></div>}
-      {loading && <div className="empty-state">Loading records…</div>}
-      </div>
-      <div className="table-footer">Showing {filteredStudents.length} of {students.length} students</div>
-
+      {!selectedProfile && !search.trim() && <div className="empty-state"><strong>Search for a student</strong><span>Enter the student’s name above. Only matching students will appear.</span></div>}
+      {!selectedProfile && search.trim() && <div className="student-search-results">
+        {filteredStudents.map(student => <div className="student-search-result" key={student.id}>
+          <div><strong>{student.full_name}</strong><small>{student.student_id} · {student.subject}</small></div>
+          <button type="button" className="primary-button compact" onClick={() => openStudentProfile(student)}>View details</button>
+        </div>)}
+        {!loading && filteredStudents.length === 0 && <div className="empty-state">No student found with that name.</div>}
+      </div>}
+      {loading && <div className="empty-state">Loading student records…</div>}
     </section>}
 
     {selectedProfile && activeTab === 'Students' && <section className="content-card student-profile-card">
