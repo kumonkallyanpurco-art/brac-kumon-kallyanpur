@@ -498,10 +498,10 @@ function App() {
   const dashboardLeaveCount = dashboardEmployeeAttendance
     .filter(row => ['leave', 'on leave'].includes(String(row.attendance_status || '').toLowerCase())).length;
 
-  async function openStudentProfile(student) {
+  async function openStudentProfile(student, preserveTab = false) {
     setSelectedProfile(student);
     try { window.localStorage.setItem('brac-kumon-selected-student', student.id); } catch { /* storage may be unavailable */ }
-    setProfileTab('Overview');
+    if (!preserveTab) setProfileTab('Overview');
     setProfileAttendanceMonth(todayDhaka.slice(0, 7));
     setProfileHistory([]);
     setProfileAttendance([]);
@@ -527,7 +527,7 @@ function App() {
     let savedId = null;
     try { savedId = window.localStorage.getItem('brac-kumon-selected-student'); } catch { /* storage may be unavailable */ }
     const savedStudent = savedId ? students.find(student => student.id === savedId) : null;
-    if (savedStudent) openStudentProfile(savedStudent);
+    if (savedStudent) openStudentProfile(savedStudent, true);
   }, [activeTab, students, selectedProfile]);
 
 
@@ -782,7 +782,7 @@ function App() {
       {!selectedProfile && <div className="student-search-results">
         {filteredStudents.map(student => <div className="student-search-result" key={student.id}>
           <div><strong>{student.full_name}</strong><small>{student.student_id} · {student.subject}</small></div>
-          <button type="button" className="primary-button compact" onClick={() => openStudentProfile(student)}>View Details</button>
+          <button type="button" className="primary-button compact" onClick={() => { setProfileTab("Overview"); openStudentProfile(student); }}>View Details</button>
         </div>)}
         {!loading && filteredStudents.length === 0 && <div className="empty-state">No student found.</div>}
       </div>}
