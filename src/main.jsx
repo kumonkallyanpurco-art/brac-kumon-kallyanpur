@@ -120,6 +120,8 @@ function App() {
   const [dashboardExpenseRows, setDashboardExpenseRows] = useState([]);
   const [dashboardEmployeeAttendance, setDashboardEmployeeAttendance] = useState([]);
   const [dashboardRoyaltyRecord, setDashboardRoyaltyRecord] = useState(null);
+  const [dashboardTransferInCount, setDashboardTransferInCount] = useState(0);
+  const [dashboardTransferOutCount, setDashboardTransferOutCount] = useState(0);
   const [dashboardRoyaltyRate, setDashboardRoyaltyRate] = useState(0.42);
   const [dashboardDataLoading, setDashboardDataLoading] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState('');
@@ -251,7 +253,7 @@ function App() {
   const loadDashboardData = useCallback(async () => {
     if (!session || !isAdmin) return;
     setDashboardDataLoading(true);
-    const [incomeResult, todayIncomeResult, attendanceResult, royaltyResult, settingsResult] = await Promise.all([
+    const [incomeResult, todayIncomeResult, attendanceResult, royaltyResult, settingsResult, transferInResult, transferOutResult] = await Promise.all([
       supabase.from('fee_payments').select('id, payment_date, fee_type, amount')
         .in('fee_type', ['Monthly Fee', 'Enrollment Fee'])
         .gte('payment_date', dashboardMonthStart).lte('payment_date', dashboardMonthEnd),
@@ -263,7 +265,9 @@ function App() {
       supabase.from('royalty_records').select('kumon_amount')
         .eq('royalty_year', Number(dashboardToday.slice(0, 4)))
         .eq('royalty_month', Number(dashboardToday.slice(5, 7))).limit(1),
-      supabase.from('center_settings').select('royalty_rate').limit(1).maybeSingle()
+      supabase.from('center_settings').select('royalty_rate').limit(1).maybeSingle(),
+      supabase.from('student_history').select('id', { count: 'exact', head: true }).eq('event_type', 'Transfer In'),
+      supabase.from('student_history').select('id', { count: 'exact', head: true }).eq('event_type', 'Transfer Out')
     ]);
     if (incomeResult.error) setError('Could not load monthly fee income: ' + incomeResult.error.message);
     else setDashboardIncomeRows(incomeResult.data || []);
@@ -275,6 +279,10 @@ function App() {
     else setDashboardRoyaltyRecord(royaltyResult.data?.[0] || null);
     if (settingsResult.error) setError('Could not load royalty rate: ' + settingsResult.error.message);
     else if (settingsResult.data?.royalty_rate != null) setDashboardRoyaltyRate(Number(settingsResult.data.royalty_rate));
+    if (transferInResult.error) setError('Could not load transfer-in count: ' + transferInResult.error.message);
+    else setDashboardTransferInCount(transferInResult.count || 0);
+    if (transferOutResult.error) setError('Could not load transfer-out count: ' + transferOutResult.error.message);
+    else setDashboardTransferOutCount(transferOutResult.count || 0);
     setDashboardDataLoading(false);
   }, [session, isAdmin, dashboardMonthStart, dashboardMonthEnd, dashboardToday]);
 
@@ -752,6 +760,12 @@ function App() {
       </div>
 
       {isAdmin && <>
+        <div className="dashboard-section-title"><div><p className="eyebrow">TRANSFER STUDENTS</p><h2>Student Transfers</h2></div></div>
+        <div className="stat-grid dashboard-stats">
+          <article className="stat-card"><span>Transfer In</span><strong>{dashboardTransferInCount}</strong><small>Students transferred in (all time)</small></article>
+          <article className="stat-card"><span>Transfer Out</span><strong>{dashboardTransferOutCount}</strong><small>Students transferred out (all time)</small></article>
+        </div>
+
         <div className="dashboard-section-title"><div><p className="eyebrow">FINANCIAL UPDATE</p><h2>Financial Overview</h2></div></div>
         <div className="stat-grid dashboard-stats dashboard-financial-stats">
           <article className="stat-card"><span>Kumon Royalty</span><strong>৳{money(dashboardKumonRoyalty)}</strong><small>{dashboardRoyaltyRecord?.kumon_amount != null ? 'Kumon amount entered' : 'Estimated at ' + Math.round(dashboardRoyaltyRate * 100) + '%'}</small></article>
