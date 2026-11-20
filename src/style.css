@@ -305,3 +305,25 @@ td strong{color:#203b4c}
 .profile-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0;padding:0 0 12px}
 .profile-tabs .tab-button{width:100%;min-height:38px;padding:8px 10px;font-size:13px;line-height:1.2;border-radius:8px;font-weight:600;white-space:normal}
 @media(max-width:480px){.profile-tabs{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.profile-tabs .tab-button{min-height:36px;padding:7px 5px;font-size:11px}}
+
+
+/* Compact attendance summary cards and readable month selector */
+.attendance-stat-card{display:flex;align-items:center;gap:11px;padding:13px 15px;min-width:0}
+.attendance-stat-card>div{min-width:0}
+.attendance-stat-card>div>span{font-size:11px;line-height:1.25}
+.attendance-stat-card strong{font-size:21px;margin:4px 0 0}
+.attendance-stat-icon{display:grid!important;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:10px;background:#eaf5fc;color:#0066b3;font-size:17px!important;font-weight:800;line-height:1}
+.attendance-stat-icon.present{background:#e8f7ed;color:#27834f}
+.attendance-stat-icon.absent{background:#fff0ef;color:#e2231a}
+.attendance-stat-icon.leave{background:#fff6e5;color:#a66b08}
+.attendance-stat-icon.pending{background:#f0f3f6;color:#667b8b}
+.fee-period label:has(input[type="month"]){flex:0 0 auto;min-width:0}
+.fee-period input[type="month"]{width:220px;min-width:220px;max-width:100%;min-height:42px;padding:9px 12px;font-size:14px;box-sizing:border-box}
+@media(max-width:480px){
+ .fee-period{gap:10px}
+ .fee-period label:has(input[type="month"]){width:100%}
+ .fee-period input[type="month"]{width:100%;min-width:0}
+ .attendance-stat-card{gap:8px;padding:11px 10px}
+ .attendance-stat-icon{flex-basis:30px;width:30px;height:30px;font-size:15px!important}
+ .attendance-stat-card strong{font-size:19px}
+}
