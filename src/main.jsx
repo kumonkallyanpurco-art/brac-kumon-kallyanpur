@@ -824,11 +824,11 @@ function App() {
           <label>Month<input type="month" value={profileAttendanceMonth} onChange={e => setProfileAttendanceMonth(e.target.value)} /></label>
         </div>
         <div className="stat-grid fee-stats">
-          <article className="stat-card"><span>Classes</span><strong>{profileAttendanceCounts.classes}</strong></article>
-          <article className="stat-card"><span>Present</span><strong>{profileAttendanceCounts.present}</strong></article>
-          <article className="stat-card"><span>Absent</span><strong>{profileAttendanceCounts.absent}</strong></article>
-          <article className="stat-card"><span>Leave</span><strong>{profileAttendanceCounts.leave}</strong></article>
-          <article className="stat-card"><span>Not marked yet</span><strong>{profileAttendanceCounts.notMarked}</strong></article>
+          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon">▦</span><div><span>Classes</span><strong>{profileAttendanceCounts.classes}</strong></div></article>
+          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon present">✓</span><div><span>Present</span><strong>{profileAttendanceCounts.present}</strong></div></article>
+          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon absent">×</span><div><span>Absent</span><strong>{profileAttendanceCounts.absent}</strong></div></article>
+          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon leave">◷</span><div><span>Leave</span><strong>{profileAttendanceCounts.leave}</strong></div></article>
+          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon pending">○</span><div><span>Not marked yet</span><strong>{profileAttendanceCounts.notMarked}</strong></div></article>
         </div>
         <div className="table-wrap"><table><thead><tr><th>Date</th><th>Day</th><th>Class</th><th>Attendance</th><th>Holiday / Note</th></tr></thead><tbody>
           {profileAttendanceCalendar.map(row => <tr key={row.date}><td>{row.date}</td><td>{row.day}</td><td>Class</td><td><span className={'status-pill ' + (row.attendance === 'Present' ? 'active' : row.attendance === 'Not marked' ? 'pending' : 'discontinued')}>{row.attendance}</span></td><td>{row.remarks || '—'}</td></tr>)}
