@@ -327,3 +327,60 @@ td strong{color:#203b4c}
  .attendance-stat-icon{flex-basis:26px;width:26px;height:26px;font-size:13px!important}
  .attendance-stat-card strong{font-size:19px}
 }
+
+
+/* Cleaner, more compact dashboard cards */
+.dashboard-overview .dashboard-section-title{
+  margin:22px 0 10px;
+}
+.dashboard-overview .dashboard-section-title h2{
+  font-size:16px;
+  letter-spacing:-.15px;
+}
+.dashboard-overview .dashboard-section-title .eyebrow{
+  font-size:9px;
+  letter-spacing:1.35px;
+  margin-bottom:4px;
+}
+.dashboard-overview .dashboard-stats{
+  gap:12px;
+  margin-bottom:16px;
+}
+.dashboard-overview .dashboard-stats .stat-card{
+  padding:16px 17px;
+  border:1px solid #dce8f1;
+  border-top:3px solid var(--kumon-blue)!important;
+  border-radius:13px;
+  box-shadow:0 3px 12px rgba(0,75,135,.045);
+  min-width:0;
+}
+.dashboard-overview .dashboard-stats .stat-card span{
+  font-size:11px;
+  line-height:1.35;
+  font-weight:650;
+  color:#60758a;
+}
+.dashboard-overview .dashboard-stats .stat-card strong{
+  font-size:24px;
+  line-height:1.15;
+  margin:7px 0 4px;
+  letter-spacing:-.45px;
+}
+.dashboard-overview .dashboard-stats .stat-card small{
+  font-size:10px;
+  line-height:1.4;
+  color:#8393a2;
+}
+.dashboard-overview .dashboard-clock-bar{
+  margin-bottom:16px;
+  border-radius:9px;
+  box-shadow:0 2px 8px rgba(0,75,135,.06);
+}
+@media(max-width:600px){
+  .dashboard-overview .dashboard-section-title{margin:19px 0 9px}
+  .dashboard-overview .dashboard-stats{gap:9px;margin-bottom:13px}
+  .dashboard-overview .dashboard-stats .stat-card{padding:13px 12px;border-radius:11px}
+  .dashboard-overview .dashboard-stats .stat-card span{font-size:10px}
+  .dashboard-overview .dashboard-stats .stat-card strong{font-size:21px;margin:6px 0 3px}
+  .dashboard-overview .dashboard-stats .stat-card small{font-size:9px}
+}
