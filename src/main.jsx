@@ -750,8 +750,11 @@ function App() {
     </section>}
 
     {selectedProfile && activeTab === 'Students' && <section className="content-card student-profile-card">
-      <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><span className={'status-pill ' + (selectedProfile.current_status === 'Active' ? 'active' : 'discontinued')}>{selectedProfile.current_status || 'Inactive'}</span></div><button className="button-light compact" onClick={() => {setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}}}>Back</button></div>
-      <div className="profile-tabs">{['Overview','Class Schedule','Learning Progress','Achievement Test','Attendance'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}</div>
+      <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><span className={'status-pill ' + (selectedProfile.current_status === 'Active' ? 'active' : 'discontinued')}>{selectedProfile.current_status || 'Inactive'}</span></div></div>
+      <div className="profile-tabs">
+        {['Overview','Class Schedule','Learning Progress','Achievement Test','Attendance'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}
+        <button type="button" className="tab-button profile-back-button" onClick={() => {setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}}}>Back</button>
+      </div>
       {profileLoading && <div className="empty-state">Loading student history…</div>}
       {!profileLoading && profileTab === 'Overview' && <div className="profile-detail-grid">
         {[
