@@ -328,26 +328,29 @@ function App() {
     else if (historyType === 'Achievement Test') { row.test_level = historyPrevious || null; row.test_result = historyNew || null; }
     else if (historyType === 'Schedule Change') {
       row.previous_class_days = historyPreviousDays || null; row.new_class_days = historyNewDays || null;
+      if (!historyPreviousDays || !historyNewDays) { setError('Enter both Previous Class Days and New Class Days.'); setSaving(false); return; }
+    }
+    else if (historyType === 'Time Change') {
       row.previous_class_time = historyPreviousTime || null; row.new_class_time = historyNewTime || null;
-      if (!historyPreviousDays && !historyNewDays && !historyPreviousTime && !historyNewTime) { setError('Enter at least one previous and new schedule or time.'); setSaving(false); return; }
+      if (!historyPreviousTime || !historyNewTime) { setError('Enter both Previous Class Time and New Class Time.'); setSaving(false); return; }
     }
     else if (historyType === 'Status Change') { row.previous_status = historyPrevious || null; row.new_status = historyNew || null; }
     else row.discontinued_reason_or_transfer_centre = historyNew || historyPrevious || null;
     let scheduleStudent = null;
     let previousSchedule = null;
-    if (historyType === 'Schedule Change') {
+    if (['Schedule Change', 'Time Change'].includes(historyType)) {
       scheduleStudent = students.find(student => student.id === historyStudent);
       if (!scheduleStudent) {
         setError('Could not find the selected student. Please select the student again.');
         setSaving(false);
         return;
       }
-      if (!!historyPreviousDays !== !!historyNewDays) {
+      if (historyType === 'Schedule Change' && (!historyPreviousDays || !historyNewDays)) {
         setError('For class days, enter both Previous Class Days and New Class Days.');
         setSaving(false);
         return;
       }
-      if (!!historyPreviousTime !== !!historyNewTime) {
+      if (historyType === 'Time Change' && (!historyPreviousTime || !historyNewTime)) {
         setError('For class time, enter both Previous Class Time and New Class Time.');
         setSaving(false);
         return;
@@ -359,11 +362,11 @@ function App() {
         current_class_time: scheduleStudent.current_class_time
       };
       const scheduleUpdate = {};
-      if (historyNewDays) {
+      if (historyType === 'Schedule Change') {
         scheduleUpdate.class_days = historyNewDays;
         scheduleUpdate.current_class_days = historyNewDays;
       }
-      if (historyNewTime) {
+      if (historyType === 'Time Change') {
         scheduleUpdate.class_time = historyNewTime;
         scheduleUpdate.current_class_time = historyNewTime;
       }
@@ -389,13 +392,13 @@ function App() {
       if (scheduleStudent) {
         const updated = {
           ...scheduleStudent,
-          ...(historyNewDays ? { class_days: historyNewDays, current_class_days: historyNewDays } : {}),
-          ...(historyNewTime ? { class_time: historyNewTime, current_class_time: historyNewTime } : {})
+          ...(historyType === 'Schedule Change' ? { class_days: historyNewDays, current_class_days: historyNewDays } : {}),
+          ...(historyType === 'Time Change' ? { class_time: historyNewTime, current_class_time: historyNewTime } : {})
         };
         setStudents(current => current.map(student => student.id === historyStudent ? updated : student));
         setSelectedProfile(current => current?.id === historyStudent ? updated : current);
       }
-      setNotice(historyType === 'Schedule Change' ? 'Schedule updated and history saved successfully.' : 'History event added.');
+      setNotice(['Schedule Change', 'Time Change'].includes(historyType) ? 'Student schedule updated and history saved successfully.' : 'History event added.');
       setHistoryStudent(''); setHistoryDate(''); setHistoryType(''); setHistorySubject(''); setHistoryPrevious(''); setHistoryNew(''); setHistoryPreviousDays(''); setHistoryNewDays(''); setHistoryPreviousTime(''); setHistoryNewTime(''); setEntryRemarks('');
     }
     setSaving(false);
@@ -944,11 +947,12 @@ function App() {
       {isAdmin && <form className="inline-entry-form" onSubmit={saveHistory}>
         <label>Student<select value={historyStudent} onChange={e => setHistoryStudent(e.target.value)} required><option value="">Select student</option>{students.map(s => <option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
         <label>Date<input type="date" value={historyDate} onChange={e => setHistoryDate(e.target.value)} required /></label>
-        <label>Event<select value={historyType} onChange={e => {setHistoryType(e.target.value);setHistoryPrevious('');setHistoryNew('');}} required><option value="">Select event</option>{['Level Change','Achievement Test','Schedule Change','Status Change','Transfer In','Transfer Out'].map(x => <option key={x} value={x}>{x}</option>)}</select></label>
+        <label>Event<select value={historyType} onChange={e => {setHistoryType(e.target.value);setHistoryPrevious('');setHistoryNew('');}} required><option value="">Select event</option>{['Level Change','Achievement Test','Schedule Change','Time Change','Status Change','Transfer In','Transfer Out'].map(x => <option key={x} value={x}>{x}</option>)}</select></label>
         <label>Subject<select value={historySubject} onChange={e => setHistorySubject(e.target.value)} required><option value="">Select subject</option><option>Math</option><option>English</option><option>Both</option></select></label>
         {historyType === 'Schedule Change' ? <>
           <label>Previous Class Days<select value={historyPreviousDays} onChange={e => setHistoryPreviousDays(e.target.value)}><option value="">Select previous days</option><option>Saturday & Tuesday</option><option>Sunday & Wednesday</option></select></label>
           <label>New Class Days<select value={historyNewDays} onChange={e => setHistoryNewDays(e.target.value)}><option value="">Select new days</option><option>Saturday & Tuesday</option><option>Sunday & Wednesday</option></select></label>
+        </> : historyType === 'Time Change' ? <>
           <label>Previous Class Time<select value={historyPreviousTime} onChange={e => setHistoryPreviousTime(e.target.value)}><option value="">Select previous time</option>{times.map(t => <option key={t} value={t}>{formatClassTime(t)}</option>)}</select></label>
           <label>New Class Time<select value={historyNewTime} onChange={e => setHistoryNewTime(e.target.value)}><option value="">Select new time</option>{times.map(t => <option key={t} value={t}>{formatClassTime(t)}</option>)}</select></label>
         </> : <>
