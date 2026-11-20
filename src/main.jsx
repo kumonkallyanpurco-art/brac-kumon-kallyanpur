@@ -70,9 +70,16 @@ function App() {
   const [profileTab, setProfileTab] = useState('Overview');
   const [profileLoading, setProfileLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    try { return window.localStorage.getItem('brac-kumon-active-tab') || 'Dashboard'; }
+    catch { return 'Dashboard'; }
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentMenuOpen, setStudentMenuOpen] = useState(false);
+  useEffect(() => {
+    try { window.localStorage.setItem('brac-kumon-active-tab', activeTab); }
+    catch { /* storage may be unavailable */ }
+  }, [activeTab]);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [historyRows, setHistoryRows] = useState([]);
   const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
