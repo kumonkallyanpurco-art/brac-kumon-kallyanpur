@@ -384,3 +384,168 @@ td strong{color:#203b4c}
   .dashboard-overview .dashboard-stats .stat-card strong{font-size:21px;margin:6px 0 3px}
   .dashboard-overview .dashboard-stats .stat-card small{font-size:9px}
 }
+
+
+/* Dashboard visual refresh — Modern Kumon Admin */
+.dashboard-overview{
+  padding:0 0 18px;
+}
+.dashboard-overview .dashboard-clock-bar{
+  position:relative;
+  overflow:hidden;
+  padding:17px 22px;
+  margin:0 0 25px;
+  min-height:76px;
+  border:0;
+  border-radius:16px;
+  color:#fff;
+  background:linear-gradient(112deg,#063d70 0%,#087db5 58%,#18a8d0 100%);
+  box-shadow:0 10px 24px #075b8d20;
+}
+.dashboard-overview .dashboard-clock-bar:after{
+  content:'';
+  position:absolute;
+  width:180px;
+  height:180px;
+  right:12%;
+  top:-112px;
+  border:1px solid #ffffff30;
+  border-radius:50%;
+  box-shadow:0 0 0 22px #ffffff0b,0 0 0 44px #ffffff08;
+  pointer-events:none;
+}
+.dashboard-overview .dashboard-clock-date{
+  position:relative;
+  z-index:1;
+  color:#e2f5ff;
+  font-size:12px;
+  font-weight:650;
+}
+.dashboard-overview .dashboard-clock-bar .dashboard-clock{
+  position:relative;
+  z-index:1;
+  color:#fff;
+  font-size:clamp(20px,3vw,27px);
+  font-weight:800;
+  letter-spacing:.4px;
+}
+.dashboard-overview .dashboard-section-title{
+  position:relative;
+  margin:25px 0 12px;
+  padding:0 0 0 12px;
+  border-left:4px solid var(--kumon-blue,#087eae);
+}
+.dashboard-overview .dashboard-section-title .eyebrow{
+  margin:0 0 3px;
+  color:#1688b8!important;
+  font-size:9px;
+  letter-spacing:1.35px;
+}
+.dashboard-overview .dashboard-section-title h2{
+  color:#123c60!important;
+  font-size:16px;
+  font-weight:800;
+  letter-spacing:-.2px;
+}
+.dashboard-overview .dashboard-stats{
+  gap:12px;
+  margin-bottom:17px;
+}
+.dashboard-overview .dashboard-stats .stat-card{
+  position:relative;
+  overflow:hidden;
+  min-height:104px;
+  padding:17px 18px 15px;
+  border:1px solid #dceaf3;
+  border-left:4px solid #0786bd;
+  border-radius:13px;
+  background:linear-gradient(145deg,#fff 0%,#f7fbfe 100%);
+  box-shadow:0 5px 15px #164b680b;
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+.dashboard-overview .dashboard-stats .stat-card:after{
+  content:'';
+  position:absolute;
+  width:72px;
+  height:72px;
+  right:-27px;
+  bottom:-34px;
+  border-radius:50%;
+  background:#e6f4fb;
+  pointer-events:none;
+}
+.dashboard-overview .dashboard-stats .stat-card:nth-child(2){
+  border-left-color:#16a0a0;
+}
+.dashboard-overview .dashboard-stats .stat-card:nth-child(3){
+  border-left-color:#e0a12c;
+}
+.dashboard-overview .dashboard-stats .stat-card:nth-child(4){
+  border-left-color:#7a70c8;
+}
+.dashboard-overview .dashboard-stats .stat-card span,
+.dashboard-overview .dashboard-stats .stat-card strong,
+.dashboard-overview .dashboard-stats .stat-card small{
+  position:relative;
+  z-index:1;
+}
+.dashboard-overview .dashboard-stats .stat-card span{
+  color:#5b7185;
+  font-size:11px;
+  font-weight:700;
+}
+.dashboard-overview .dashboard-stats .stat-card strong{
+  margin:9px 0 4px;
+  color:#103f67!important;
+  font-size:25px;
+  line-height:1.1;
+  font-weight:850;
+}
+.dashboard-overview .dashboard-stats .stat-card small{
+  color:#8294a3;
+  font-size:9px;
+}
+.dashboard-overview .dashboard-stats .stat-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 9px 20px #164b6815;
+}
+.dashboard-overview .dashboard-financial-stats .stat-card{
+  background:linear-gradient(135deg,#f0f8fd,#fff 78%);
+}
+.dashboard-overview .dashboard-financial-stats .stat-card strong{
+  color:#087b9f!important;
+  font-size:23px;
+}
+.dashboard-overview .dashboard-today-income .stat-card{
+  background:linear-gradient(135deg,#f1fbf8,#fff 78%);
+  border-left-color:#1b9b78;
+}
+.dashboard-overview .dashboard-today-income .stat-card strong{
+  color:#147b60!important;
+}
+@media(max-width:760px){
+  .dashboard-overview .dashboard-clock-bar{
+    padding:13px 15px;
+    min-height:62px;
+    border-radius:13px;
+  }
+  .dashboard-overview .dashboard-section-title{
+    margin:20px 0 10px;
+  }
+  .dashboard-overview .dashboard-stats{
+    gap:9px;
+    margin-bottom:13px;
+  }
+  .dashboard-overview .dashboard-stats .stat-card{
+    min-height:92px;
+    padding:13px 12px 12px;
+    border-radius:11px;
+  }
+  .dashboard-overview .dashboard-stats .stat-card strong{
+    font-size:22px;
+    margin:7px 0 3px;
+  }
+  .dashboard-overview .dashboard-stats .stat-card small{
+    font-size:8px;
+  }
+}
