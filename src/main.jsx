@@ -811,7 +811,7 @@ function App() {
     </section>}
 
     {selectedProfile && activeTab === 'Students' && <section className="content-card student-profile-card">
-      <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><span className={'status-pill ' + (selectedProfile.current_status === 'Active' ? 'active' : 'discontinued')}>{selectedProfile.current_status || 'Inactive'}</span></div></div>
+      <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><span className={'status-pill ' + (selectedProfile.current_status === 'Active' ? 'active' : 'discontinued')}>{selectedProfile.current_status || 'Inactive'}</span></div><button type="button" className="button-light compact search-student-button" onClick={() => { setSelectedProfile(null); setProfileHistory([]); setProfileAttendance([]); try { window.localStorage.removeItem('brac-kumon-selected-student'); } catch {} }}><span aria-hidden="true">⌕</span> Search Student</button></div>
       <div className="profile-tabs">
         {['Overview','Class Schedule','Learning Progress','Achievement Test','Attendance'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}
         <button type="button" className={profileTab === 'History' ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab('History')}>History</button>
