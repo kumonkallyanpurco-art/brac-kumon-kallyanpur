@@ -740,12 +740,7 @@ function App() {
         {[
           ['Student ID', selectedProfile.student_id], ['Student Name', selectedProfile.full_name], ['Subject at Enrollment', selectedProfile.subject],
           ['Admission Date', selectedProfile.admission_date], ['Class Start Date', selectedProfile.class_start_date], ['School Class', selectedProfile.school_class],
-          ['Medium', selectedProfile.medium], ['Consent From', selectedProfile.consent_from], ['ZnZn', selectedProfile.znzn],
-          ['Enrolled Class Days', selectedProfile.class_days], ['Current Class Days', selectedProfile.current_class_days || selectedProfile.class_days],
-          ['Enrolled Class Time', formatClassTime(selectedProfile.class_time)], ['Current Class Time', formatClassTime(selectedProfile.current_class_time || selectedProfile.class_time)],
-          ['Current Status', selectedProfile.current_status || selectedProfile.enrollment_status || 'Active'], ['Status Effective Date', selectedProfile.status_effective_date],
-          ['Stop Billing From', selectedProfile.stop_billing_from], ['No Fee / Exempt', selectedProfile.no_fee ? 'Yes' : 'No'],
-          ['Not counted in subject totals', selectedProfile.exclude_from_subject_totals ? 'Yes' : 'No'], ['Remarks', selectedProfile.remarks]
+          ['Medium', selectedProfile.medium], ['Consent From', selectedProfile.consent_from], ['ZnZn', selectedProfile.znzn]
         ].map(([label,value]) => <div className="profile-detail" key={label}><small>{label}</small><strong>{value || '—'}</strong></div>)}
       </div>}
       {!profileLoading && profileTab === 'Class Schedule' && <div className="profile-detail-grid">
