@@ -799,8 +799,11 @@ function App() {
       </div>
       {!selectedProfile && <div className="student-search-results">
         {filteredStudents.map(student => <div className="student-search-result" key={student.id}>
-          <div><strong>{student.full_name}</strong><small>{student.student_id} · {student.subject}</small></div>
-          <button type="button" className="primary-button compact" onClick={() => { setProfileTab("Overview"); openStudentProfile(student); }}>View Details</button>
+          <div className="student-search-identity"><strong>{student.full_name}</strong><small>{student.student_id} · {student.subject}</small></div>
+          <div className="student-search-actions">
+            <button type="button" className="primary-button compact" onClick={() => { setProfileTab("Overview"); openStudentProfile(student); }}>View Details</button>
+            {isAdmin && <button type="button" className="button-light compact" onClick={() => openEditStudent(student)}>Edit Details</button>}
+          </div>
         </div>)}
         {!loading && filteredStudents.length === 0 && <div className="empty-state">No student found.</div>}
       </div>}
@@ -858,7 +861,6 @@ function App() {
         </tbody></table>{!profileAttendanceCalendar.length && <div className="empty-state">No scheduled class dates for this month.</div>}</div>
       </>}
 
-      {isAdmin && <div className="section-actions"><button className="primary-button compact" onClick={() => openEditStudent(selectedProfile)}>Edit student details</button></div>}
     </section>}
 
     {activeTab === 'Attendance' && <section className="content-card">
