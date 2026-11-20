@@ -74,6 +74,7 @@ function App() {
 
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [studentMenuOpen, setStudentMenuOpen] = useState(false);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [historyRows, setHistoryRows] = useState([]);
   const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
@@ -667,15 +668,25 @@ function App() {
       <div className="sidebar-brand"><div className="brand-mark">BK</div><div><strong>BRAC Kumon</strong><span>Kallyanpur Center</span></div></div>
       <p className="sidebar-label">MAIN MENU</p>
       <nav className="sidebar-nav">
-        {[
-          {tab:'Dashboard', icon:'⌂', label:'Dashboard'},
-          {tab:'Students', icon:'▦', label:'Students'},
-          {tab:'Attendance', icon:'✓', label:'Attendance'},
-          {tab:'History', icon:'↻', label:'History'},
-          ...(isAdmin ? [{tab:'Fees',icon:'৳',label:'Fees'},{tab:'Employees',icon:'♙',label:'Employees'}] : [])
-        ].map(item => <button type="button" key={item.tab} className={activeTab === item.tab ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab(item.tab);setSidebarOpen(false);setError('');setNotice('');}}>
-          <span className="sidebar-icon">{item.icon}</span><span>{item.label}</span>
-        </button>)}
+        <button type="button" className={activeTab === 'Dashboard' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab('Dashboard');setSidebarOpen(false);setError('');setNotice('');}}>
+          <span className="sidebar-icon">⌂</span><span>Dashboard</span>
+        </button>
+        <div className="sidebar-menu-group">
+          <button type="button" aria-expanded={studentMenuOpen} className={['Students','Fees','Attendance'].includes(activeTab) ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setStudentMenuOpen(v => !v)}>
+            <span className="sidebar-icon">▦</span><span>Student</span><span className="sidebar-chevron">{studentMenuOpen ? '⌃' : '⌄'}</span>
+          </button>
+          {studentMenuOpen && <div className="sidebar-submenu">
+            <button type="button" className={activeTab === 'Students' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Students');setSidebarOpen(false);setError('');setNotice('');}}>Student Profile</button>
+            {isAdmin && <button type="button" className={activeTab === 'Fees' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Fees');setSidebarOpen(false);setError('');setNotice('');}}>Fees</button>}
+            <button type="button" className={activeTab === 'Attendance' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Attendance');setSidebarOpen(false);setError('');setNotice('');}}>Attendance</button>
+          </div>}
+        </div>
+        <button type="button" className={activeTab === 'History' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab('History');setSidebarOpen(false);setError('');setNotice('');}}>
+          <span className="sidebar-icon">↻</span><span>History</span>
+        </button>
+        {isAdmin && <button type="button" className={activeTab === 'Employees' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab('Employees');setSidebarOpen(false);setError('');setNotice('');}}>
+          <span className="sidebar-icon">♙</span><span>Employees</span>
+        </button>}
       </nav>
       <div className="sidebar-bottom"><span className="sidebar-online-dot"></span> Online workspace</div>
     </aside>
