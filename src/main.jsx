@@ -544,6 +544,7 @@ function App() {
       if (!result.data?.id) throw new Error('No student record was updated. Please refresh the page and try again.');
       setNotice(editingId ? 'Student details updated successfully.' : 'Student added successfully.');
       setShowForm(false);
+      if (!editingId) setActiveTab('Students');
       await loadData();
     } catch (err) {
       setError('Could not save student: ' + (err?.message || 'Unknown error'));
@@ -672,11 +673,12 @@ function App() {
           <span className="sidebar-icon">⌂</span><span>Dashboard</span>
         </button>
         <div className="sidebar-menu-group">
-          <button type="button" aria-expanded={studentMenuOpen} className={['Students','Fees','Attendance'].includes(activeTab) ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setStudentMenuOpen(v => !v)}>
+          <button type="button" aria-expanded={studentMenuOpen} className={['AddStudent','Students','Fees','Attendance'].includes(activeTab) ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setStudentMenuOpen(v => !v)}>
             <span className="sidebar-icon">▦</span><span>Student</span><span className="sidebar-chevron">{studentMenuOpen ? '⌃' : '⌄'}</span>
           </button>
           {studentMenuOpen && <div className="sidebar-submenu">
-            <button type="button" className={activeTab === 'Students' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Students');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">◎</span><span>Student Profile</span></button>
+            {isAdmin && <button type="button" className={activeTab === 'AddStudent' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('AddStudent');setSidebarOpen(false);openNewStudent();}}><span className="submenu-icon add-student-icon">＋</span><span>Add Student</span></button>}
+            <button type="button" className={activeTab === 'Students' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Students');setSidebarOpen(false);setError('');setNotice('');setSelectedProfile(null);}}><span className="submenu-icon">◎</span><span>Student Profile</span></button>
             {isAdmin && <button type="button" className={activeTab === 'Fees' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Fees');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">৳</span><span>Fees</span></button>}
             <button type="button" className={activeTab === 'Attendance' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Attendance');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">✓</span><span>Attendance</span></button>
           </div>}
@@ -737,10 +739,10 @@ function App() {
 
     {activeTab === 'Students' && <section className="content-card">
       <div className="section-heading"><div><p className="eyebrow">STUDENT MANAGEMENT</p><h2>Student directory</h2><p className="muted">{isAdmin ? 'Add, update and manage student records.' : 'View student and classroom information.'}</p></div>
-        <div className="section-actions">{isAdmin && <button className="primary-button compact" onClick={openNewStudent}>+ Add student</button>}<button className="button-light compact" onClick={exportCsv}>Export CSV</button></div>
+        <div className="section-actions"><button className="button-light compact" onClick={exportCsv}>Export CSV</button></div>
       </div>
       <div className="filters">
-        <input className="search-input" placeholder="Search by ID, name or subject…" value={search} onChange={e => setSearch(e.target.value)} />
+        <input className="search-input" placeholder="Search student by name or ID…" value={search} onChange={e => setSearch(e.target.value)} />
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option>All</option><option>Active</option><option>On Hold</option><option>Discontinued</option></select>
         <select value={subjectFilter} onChange={e => setSubjectFilter(e.target.value)}><option>All</option><option>Math</option><option>English</option><option>Both</option></select>
       </div>
