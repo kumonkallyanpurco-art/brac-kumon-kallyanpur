@@ -265,3 +265,12 @@ td strong{color:#203b4c}
     border-radius:0;
   }
 }
+
+
+/* Student navigation dropdown */
+.sidebar-menu-group{display:flex;flex-direction:column;gap:5px}
+.sidebar-chevron{margin-left:auto;font-size:17px;opacity:.8}
+.sidebar-submenu{display:flex;flex-direction:column;gap:4px;margin:0 0 5px 35px;padding-left:12px;border-left:1px solid #ffffff35}
+.sidebar-sublink{width:100%;border:0;border-radius:8px;padding:10px 12px;background:transparent;color:#cbd8e8;text-align:left;font-size:12px;font-weight:600}
+.sidebar-sublink:hover{background:#ffffff12;color:#fff}
+.sidebar-sublink.active{background:#eaf5fc;color:#0066b3}
