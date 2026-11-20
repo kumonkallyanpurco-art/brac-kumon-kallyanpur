@@ -1016,3 +1016,40 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
 @media(max-width:600px){
   .attendance-date-control .attendance-search-field{min-width:0;width:100%}
 }
+
+
+/* Keep attendance date and student search side by side on all screen sizes */
+.attendance-date-control{
+  display:grid;
+  grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr);
+  align-items:end;
+  gap:12px;
+}
+.attendance-date-control label{
+  min-width:0;
+  width:100%;
+}
+.attendance-date-control input{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+@media(max-width:600px){
+  .attendance-date-control{
+    grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr);
+    flex-direction:initial;
+    align-items:end;
+    gap:9px;
+    padding:11px;
+  }
+  .attendance-date-control label{
+    min-width:0;
+    width:100%;
+    font-size:11px;
+  }
+  .attendance-date-control input{
+    min-height:38px;
+    padding:8px 7px;
+    font-size:11px;
+  }
+}
