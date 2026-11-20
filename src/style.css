@@ -1007,3 +1007,25 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
  .attendance-roster-status{flex:1 1 100%;margin-left:32px}
  .attendance-roster-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Cleaner attendance page with quick student search */
+.attendance-register .section-heading .muted{display:none}
+.attendance-toolbar{display:grid;grid-template-columns:minmax(180px,.75fr) minmax(240px,1.25fr);gap:12px;padding:15px;background:#f5fafc;border:1px solid #e2edf2;border-radius:12px;margin:16px 0 12px}
+.attendance-toolbar label{display:flex;flex-direction:column;gap:7px;color:#526d7c;font-size:11px;font-weight:750}
+.attendance-toolbar input{width:100%;min-height:42px;padding:10px 12px;border:1px solid #d7e4eb;border-radius:8px;background:#fff;color:#24475a;font:inherit;font-size:13px;box-sizing:border-box}
+.attendance-toolbar input:focus{outline:none;border-color:#00a9e0;box-shadow:0 0 0 3px rgba(0,169,224,.1)}
+.attendance-quick-counts{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;padding:8px 2px 14px;color:#6d8491;font-size:11px;border-bottom:1px solid #e8eff3}
+.attendance-quick-counts span{white-space:nowrap}
+.attendance-quick-counts span:first-child{font-weight:750;color:#123b5d}
+.attendance-quick-counts b{margin-left:3px;color:#123b5d;font-size:12px}
+.attendance-roster-heading{margin:15px 0 9px}
+.attendance-roster-list{gap:6px}
+.attendance-roster-row{border-radius:9px;padding:10px 12px;box-shadow:none}
+.attendance-roster-number{border-radius:6px}
+.attendance-roster-status{flex-basis:160px}
+@media(max-width:600px){
+ .attendance-toolbar{grid-template-columns:1fr;gap:10px;padding:12px}
+ .attendance-quick-counts{gap:7px 12px;font-size:10px}
+ .attendance-roster-status{flex-basis:132px}
+}
