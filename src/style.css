@@ -849,38 +849,3 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
  .student-search-actions{width:100%}
  .student-search-actions button{flex:1}
 }
-
-
-/* Larger, easier-to-read Achievement Test and student History tables */
-.student-profile-card .table-wrap{
-  width:100%;
-  overflow-x:auto;
-  border-radius:13px;
-  margin-top:8px;
-}
-.student-profile-card .table-wrap table{
-  width:100%;
-  min-width:760px;
-  table-layout:auto;
-}
-.student-profile-card .table-wrap th{
-  padding:16px 15px;
-  font-size:11px;
-  line-height:1.4;
-  letter-spacing:.55px;
-  white-space:nowrap;
-}
-.student-profile-card .table-wrap td{
-  padding:17px 15px;
-  font-size:13px;
-  line-height:1.55;
-  vertical-align:middle;
-}
-.student-profile-card .table-wrap td strong{
-  font-size:13px;
-}
-@media(max-width:600px){
-  .student-profile-card .table-wrap table{min-width:760px}
-  .student-profile-card .table-wrap th{padding:14px 12px;font-size:10px}
-  .student-profile-card .table-wrap td{padding:15px 12px;font-size:12px}
-}
