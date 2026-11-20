@@ -299,3 +299,9 @@ td strong{color:#203b4c}
 .profile-tabs{gap:6px;margin:14px 0;padding-bottom:10px}
 .profile-tabs .tab-button{padding:8px 13px;font-size:13px;line-height:1.25;border-radius:8px;font-weight:600}
 @media(max-width:480px){.profile-tabs{gap:5px}.profile-tabs .tab-button{padding:7px 10px;font-size:12px}}
+
+
+/* Student profile tabs arranged in two compact rows */
+.profile-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0;padding:0 0 12px}
+.profile-tabs .tab-button{width:100%;min-height:38px;padding:8px 10px;font-size:13px;line-height:1.2;border-radius:8px;font-weight:600;white-space:normal}
+@media(max-width:480px){.profile-tabs{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.profile-tabs .tab-button{min-height:36px;padding:7px 5px;font-size:11px}}
