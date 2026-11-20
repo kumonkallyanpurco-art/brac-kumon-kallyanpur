@@ -968,16 +968,9 @@ function App() {
 
     {activeTab === 'Attendance' && <section className="content-card attendance-register">
       <div className="section-heading"><div><p className="eyebrow">CLASSROOM</p><h2>Student Attendance</h2><p className="muted">Choose a class date. Students scheduled for that day will appear automatically.</p></div></div>
-      <div className="attendance-toolbar">
-        <label className="attendance-date-field">Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
-        <label className="attendance-search-field"><span>Search Student</span><input type="search" placeholder="Search by name or ID..." value={attendanceSearch} onChange={e => setAttendanceSearch(e.target.value)} /></label>
-      </div>
-      <div className="attendance-quick-counts">
-        <span>{attendanceRoster.length} Students</span>
-        <span>Present <b>{attendanceRoster.filter(row => row.attendance === 'Present').length}</b></span>
-        <span>Absent <b>{attendanceRoster.filter(row => row.attendance === 'Absent').length}</b></span>
-        <span>Leave <b>{attendanceRoster.filter(row => row.attendance === 'Leave').length}</b></span>
-        <span>Pending <b>{attendanceRoster.filter(row => !row.attendance).length}</b></span>
+      <div className="attendance-date-control">
+        <label>Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
+        <label className="attendance-search-field">Search Student<input type="search" placeholder="Search by name or ID..." value={attendanceSearch} onChange={e => setAttendanceSearch(e.target.value)} /></label>
       </div>
       <div className="attendance-roster-heading"><h3>Class List</h3><span>{attendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).length} shown</span></div>
       <div className="attendance-roster-list">
