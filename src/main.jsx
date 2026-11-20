@@ -67,6 +67,7 @@ function App() {
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [profileHistory, setProfileHistory] = useState([]);
   const [profileAttendance, setProfileAttendance] = useState([]);
+  const [profileAttendanceMonth, setProfileAttendanceMonth] = useState(todayDhaka.slice(0, 7));
   const [profileTab, setProfileTab] = useState(() => { try { return window.localStorage.getItem('brac-kumon-profile-tab') || 'Overview'; } catch { return 'Overview'; } });
   const [profileLoading, setProfileLoading] = useState(false);
 
@@ -128,6 +129,41 @@ function App() {
 
 
   const isAdmin = profile?.role === 'admin';
+
+  const profileAttendanceCalendar = useMemo(() => {
+    if (!selectedProfile || !/^[0-9]{4}-[0-9]{2}$/.test(profileAttendanceMonth)) return [];
+    const [year, month] = profileAttendanceMonth.split('-').map(Number);
+    const lastDay = new Date(year, month, 0).getDate();
+    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const attendanceByDate = new Map(profileAttendance.map(row => [String(row.class_date).slice(0, 10), row]));
+    const scheduleEvents = profileHistory.filter(row => row.event_type === 'Schedule Change' && row.new_class_days && row.event_date).sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)));
+    const statusEvents = profileHistory.filter(row => row.event_type === 'Status Change' && row.new_status && row.event_date).sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)));
+    const initialDays = selectedProfile.current_class_days || selectedProfile.class_days || '';
+    const startDate = selectedProfile.class_start_date ? String(selectedProfile.class_start_date).slice(0, 10) : '';
+    const rows = [];
+    for (let day = 1; day <= lastDay; day += 1) {
+      const date = new Date(year, month - 1, day);
+      const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      if (startDate && dateKey < startDate) continue;
+      const schedule = scheduleEvents.filter(event => String(event.event_date).slice(0, 10) <= dateKey).at(-1);
+      const classDays = schedule?.new_class_days || initialDays;
+      const scheduled = classDays.toLowerCase().includes(weekdayNames[date.getDay()].toLowerCase());
+      const statusEvent = statusEvents.filter(event => String(event.event_date).slice(0, 10) <= dateKey).at(-1);
+      const status = statusEvent?.new_status || selectedProfile.current_status || 'Active';
+      if (!scheduled || ['Discontinued', 'Inactive'].includes(status)) continue;
+      const record = attendanceByDate.get(dateKey);
+      rows.push({ date: dateKey, day: weekdayNames[date.getDay()], attendance: record?.attendance || 'Not marked', remarks: record?.remarks || '' });
+    }
+    return rows;
+  }, [selectedProfile, profileAttendanceMonth, profileAttendance, profileHistory]);
+
+  const profileAttendanceCounts = useMemo(() => ({
+    classes: profileAttendanceCalendar.length,
+    present: profileAttendanceCalendar.filter(row => row.attendance === 'Present').length,
+    absent: profileAttendanceCalendar.filter(row => row.attendance === 'Absent').length,
+    leave: profileAttendanceCalendar.filter(row => row.attendance === 'Leave').length,
+    notMarked: profileAttendanceCalendar.filter(row => row.attendance === 'Not marked').length
+  }), [profileAttendanceCalendar]);
 
   useEffect(() => {
     const timer = setInterval(() => setClockNow(new Date()), 1000);
@@ -461,6 +497,7 @@ function App() {
     setSelectedProfile(student);
     try { window.localStorage.setItem('brac-kumon-selected-student', student.id); } catch { /* storage may be unavailable */ }
     setProfileTab('Overview');
+    setProfileAttendanceMonth(todayDhaka.slice(0, 7));
     setProfileHistory([]);
     setProfileAttendance([]);
     setProfileLoading(true);
@@ -783,14 +820,19 @@ function App() {
         {profileHistory.map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.event_type}</td><td>{x.subject || '—'}</td><td>{x.previous_level || x.test_level || x.previous_class_days || x.previous_class_time || x.previous_status || '—'}</td><td>{x.new_level || x.test_result || x.new_class_days || x.new_class_time || x.new_status || x.discontinued_reason_or_transfer_centre || '—'}</td><td>{x.remarks || '—'}</td></tr>)}
       </tbody></table>{!profileHistory.length && <div className="empty-state">No history records found for this student.</div>}</div>}
       {!profileLoading && profileTab === 'Attendance' && <>
-        <div className="stat-grid fee-stats">
-          <article className="stat-card"><span>Present</span><strong>{profileAttendance.filter(x => x.attendance === 'Present').length}</strong></article>
-          <article className="stat-card"><span>Absent</span><strong>{profileAttendance.filter(x => x.attendance === 'Absent').length}</strong></article>
-          <article className="stat-card"><span>Leave</span><strong>{profileAttendance.filter(x => x.attendance === 'Leave').length}</strong></article>
+        <div className="fee-period">
+          <label>Month<input type="month" value={profileAttendanceMonth} onChange={e => setProfileAttendanceMonth(e.target.value)} /></label>
         </div>
-        <div className="table-wrap"><table><thead><tr><th>Class Date</th><th>Attendance</th><th>Remarks</th></tr></thead><tbody>
-          {profileAttendance.map(x => <tr key={x.id}><td>{x.class_date}</td><td>{x.attendance}</td><td>{x.remarks || '—'}</td></tr>)}
-        </tbody></table>{!profileAttendance.length && <div className="empty-state">No attendance records found.</div>}</div>
+        <div className="stat-grid fee-stats">
+          <article className="stat-card"><span>Classes</span><strong>{profileAttendanceCounts.classes}</strong></article>
+          <article className="stat-card"><span>Present</span><strong>{profileAttendanceCounts.present}</strong></article>
+          <article className="stat-card"><span>Absent</span><strong>{profileAttendanceCounts.absent}</strong></article>
+          <article className="stat-card"><span>Leave</span><strong>{profileAttendanceCounts.leave}</strong></article>
+          <article className="stat-card"><span>Not marked yet</span><strong>{profileAttendanceCounts.notMarked}</strong></article>
+        </div>
+        <div className="table-wrap"><table><thead><tr><th>Date</th><th>Day</th><th>Class</th><th>Attendance</th><th>Holiday / Note</th></tr></thead><tbody>
+          {profileAttendanceCalendar.map(row => <tr key={row.date}><td>{row.date}</td><td>{row.day}</td><td>Class</td><td><span className={'status-pill ' + (row.attendance === 'Present' ? 'active' : row.attendance === 'Not marked' ? 'pending' : 'discontinued')}>{row.attendance}</span></td><td>{row.remarks || '—'}</td></tr>)}
+        </tbody></table>{!profileAttendanceCalendar.length && <div className="empty-state">No scheduled class dates for this month.</div>}</div>
       </>}
 
       {isAdmin && <div className="section-actions"><button className="primary-button compact" onClick={() => openEditStudent(selectedProfile)}>Edit student details</button></div>}
