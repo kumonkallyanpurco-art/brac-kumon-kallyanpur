@@ -849,3 +849,35 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
  .student-search-actions{width:100%}
  .student-search-actions button{flex:1}
 }
+
+
+/* Keep View and Edit side by side in every student directory row */
+.student-search-result{
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.student-search-identity{flex:1 1 auto;min-width:0}
+.student-search-actions{
+  display:flex;
+  flex:0 0 auto;
+  flex-direction:row;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  width:auto;
+  white-space:nowrap;
+}
+.student-search-actions .compact{
+  flex:0 0 auto;
+  min-width:58px;
+  padding:7px 10px;
+  text-align:center;
+}
+@media(max-width:520px){
+  .student-search-result{flex-direction:row;align-items:center;gap:8px}
+  .student-search-actions{width:auto;flex:0 0 auto}
+  .student-search-actions button{flex:0 0 auto}
+  .student-search-actions .compact{min-width:52px;padding:7px 8px}
+}
