@@ -489,6 +489,8 @@ function App() {
   }, [students]);
 
   const dashboardActiveStudents = students.filter(student => student.current_status === 'Active');
+  const dashboardOnHoldStudents = students.filter(student => student.current_status === 'On Hold');
+  const dashboardDiscontinuedStudents = students.filter(student => student.current_status === 'Discontinued');
   const dashboardSubjectCount = dashboardActiveStudents
     .filter(student => !student.exclude_from_subject_totals)
     .reduce((total, student) => total + (student.subject === 'Both' ? 2 : (student.subject === 'Math' || student.subject === 'English' ? 1 : 0)), 0);
@@ -754,8 +756,10 @@ function App() {
     {activeTab === 'Dashboard' && <section className="dashboard-overview">
       <div className="dashboard-clock-bar"><span className="dashboard-clock-date">{dashboardDateLabel}</span><strong className="dashboard-clock">{dashboardTimeLabel}</strong></div>
       <div className="dashboard-section-title"><div><p className="eyebrow">STUDENT DATA</p><h2>Student Overview</h2></div></div>
-      <div className="stat-grid dashboard-stats">
+      <div className="stat-grid dashboard-stats dashboard-student-stats">
         <article className="stat-card"><span>Active Students</span><strong>{dashboardActiveStudents.length}</strong><small>Currently enrolled</small></article>
+        <article className="stat-card"><span>On Hold</span><strong>{dashboardOnHoldStudents.length}</strong><small>Temporarily on hold</small></article>
+        <article className="stat-card"><span>Discontinued</span><strong>{dashboardDiscontinuedStudents.length}</strong><small>Discontinued students</small></article>
         <article className="stat-card"><span>Total Subject Count</span><strong>{dashboardSubjectCount}</strong><small>Active Math + English enrollments</small></article>
       </div>
 
