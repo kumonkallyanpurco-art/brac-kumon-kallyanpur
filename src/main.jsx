@@ -801,8 +801,8 @@ function App() {
         {filteredStudents.map(student => <div className="student-search-result" key={student.id}>
           <div className="student-search-identity"><strong>{student.full_name}</strong><small>{student.student_id} · {student.subject}</small></div>
           <div className="student-search-actions">
-            <button type="button" className="primary-button compact" onClick={() => { setProfileTab("Overview"); openStudentProfile(student); }}>View Details</button>
-            {isAdmin && <button type="button" className="button-light compact" onClick={() => openEditStudent(student)}>Edit Details</button>}
+            <button type="button" className="primary-button compact" onClick={() => { setProfileTab("Overview"); openStudentProfile(student); }}>View</button>
+            {isAdmin && <button type="button" className="button-light compact" onClick={() => openEditStudent(student)}>Edit</button>}
           </div>
         </div>)}
         {!loading && filteredStudents.length === 0 && <div className="empty-state">No student found.</div>}
