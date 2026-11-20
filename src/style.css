@@ -293,3 +293,9 @@ td strong{color:#203b4c}
 .student-search-result strong{color:#004b87;font-size:14px}
 .student-search-result small{color:#647b90;font-size:11px}
 @media(max-width:600px){.student-search-result{padding:12px;gap:8px}.student-search-result .primary-button{white-space:nowrap}}
+
+
+/* Compact student profile navigation */
+.profile-tabs{gap:6px;margin:14px 0;padding-bottom:10px}
+.profile-tabs .tab-button{padding:8px 13px;font-size:13px;line-height:1.25;border-radius:8px;font-weight:600}
+@media(max-width:480px){.profile-tabs{gap:5px}.profile-tabs .tab-button{padding:7px 10px;font-size:12px}}
