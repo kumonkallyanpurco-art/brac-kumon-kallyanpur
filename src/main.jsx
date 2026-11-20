@@ -734,7 +734,7 @@ function App() {
 
     {selectedProfile && activeTab === 'Students' && <section className="content-card student-profile-card">
       <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><h2>{selectedProfile.full_name}</h2><p className="muted">Student ID: {selectedProfile.student_id} · {selectedProfile.subject}</p></div><button className="button-light compact" onClick={() => setSelectedProfile(null)}>Back to directory</button></div>
-      <div className="profile-tabs">{['Overview','Learning Progress','Achievement Tests','Attendance','Full History'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}</div>
+      <div className="profile-tabs">{['Overview','Class Schedule','Learning Progress','Achievement Test','Attendance'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}</div>
       {profileLoading && <div className="empty-state">Loading student history…</div>}
       {!profileLoading && profileTab === 'Overview' && <div className="profile-detail-grid">
         {[
@@ -748,6 +748,13 @@ function App() {
           ['Not counted in subject totals', selectedProfile.exclude_from_subject_totals ? 'Yes' : 'No'], ['Remarks', selectedProfile.remarks]
         ].map(([label,value]) => <div className="profile-detail" key={label}><small>{label}</small><strong>{value || '—'}</strong></div>)}
       </div>}
+      {!profileLoading && profileTab === 'Class Schedule' && <div className="profile-detail-grid">
+        <div className="profile-detail"><small>Class Days</small><strong>{selectedProfile.current_class_days || selectedProfile.class_days || '—'}</strong></div>
+        <div className="profile-detail"><small>Class Time</small><strong>{formatClassTime(selectedProfile.current_class_time || selectedProfile.class_time) || '—'}</strong></div>
+        <div className="profile-detail"><small>Class Start Date</small><strong>{selectedProfile.class_start_date || '—'}</strong></div>
+        <div className="profile-detail"><small>School Class</small><strong>{selectedProfile.school_class || '—'}</strong></div>
+        <div className="profile-detail"><small>Medium</small><strong>{selectedProfile.medium || '—'}</strong></div>
+      </div>}
       {!profileLoading && profileTab === 'Learning Progress' && <div className="profile-detail-grid">
         <div className="profile-detail"><small>Math Starting Level</small><strong>{selectedProfile.starting_math_level || '—'}</strong></div>
         <div className="profile-detail"><small>Math Current Level</small><strong>{[...profileHistory].filter(x => x.event_type === 'Level Change' && x.subject === 'Math' && x.new_level).sort((a,b)=>String(b.event_date).localeCompare(String(a.event_date)))[0]?.new_level || selectedProfile.starting_math_level || '—'}</strong></div>
@@ -756,7 +763,7 @@ function App() {
         <div className="profile-detail"><small>Math Level Changes</small><strong>{profileHistory.filter(x => x.event_type === 'Level Change' && x.subject === 'Math').length}</strong></div>
         <div className="profile-detail"><small>English Level Changes</small><strong>{profileHistory.filter(x => x.event_type === 'Level Change' && x.subject === 'English').length}</strong></div>
       </div>}
-      {!profileLoading && profileTab === 'Achievement Tests' && <div className="table-wrap"><table><thead><tr><th>Test Date</th><th>Subject</th><th>Test Level</th><th>Result</th><th>Remarks</th></tr></thead><tbody>
+      {!profileLoading && profileTab === 'Achievement Test' && <div className="table-wrap"><table><thead><tr><th>Test Date</th><th>Subject</th><th>Test Level</th><th>Result</th><th>Remarks</th></tr></thead><tbody>
         {profileHistory.filter(x => x.event_type === 'Achievement Test').map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.subject || '—'}</td><td>{x.test_level || '—'}</td><td>{x.test_result || '—'}</td><td>{x.remarks || '—'}</td></tr>)}
       </tbody></table>{!profileHistory.some(x => x.event_type === 'Achievement Test') && <div className="empty-state">No achievement tests recorded.</div>}</div>}
       {!profileLoading && profileTab === 'Attendance' && <>
@@ -769,9 +776,7 @@ function App() {
           {profileAttendance.map(x => <tr key={x.id}><td>{x.class_date}</td><td>{x.attendance}</td><td>{x.remarks || '—'}</td></tr>)}
         </tbody></table>{!profileAttendance.length && <div className="empty-state">No attendance records found.</div>}</div>
       </>}
-      {!profileLoading && profileTab === 'Full History' && <div className="table-wrap"><table><thead><tr><th>Date</th><th>Event</th><th>Subject</th><th>Previous</th><th>New / Result</th><th>Reason / Remarks</th></tr></thead><tbody>
-        {profileHistory.map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.event_type}</td><td>{x.subject || '—'}</td><td>{x.previous_level || x.previous_class_days || x.previous_status || x.previous_class_time || '—'}</td><td>{x.new_level || x.test_level || x.test_result || x.new_class_days || x.new_status || x.new_class_time || '—'}</td><td>{x.discontinued_reason_or_transfer_centre || x.remarks || '—'}</td></tr>)}
-      </tbody></table>{!profileHistory.length && <div className="empty-state">No history events recorded.</div>}</div>}
+
       {isAdmin && <div className="section-actions"><button className="primary-button compact" onClick={() => openEditStudent(selectedProfile)}>Edit student details</button></div>}
     </section>}
 
