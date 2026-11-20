@@ -88,6 +88,8 @@ function App() {
     catch { /* storage may be unavailable */ }
   }, [activeTab]);
   const [attendanceRows, setAttendanceRows] = useState([]);
+  const [attendanceScheduleHistory, setAttendanceScheduleHistory] = useState([]);
+  const [attendanceSavingId, setAttendanceSavingId] = useState('');
   const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
   const [attendanceStudent, setAttendanceStudent] = useState('');
   const [attendanceValue, setAttendanceValue] = useState('Present');
@@ -175,6 +177,29 @@ function App() {
     leave: profileAttendanceCalendar.filter(row => row.attendance === 'Leave').length,
     notMarked: profileAttendanceCalendar.filter(row => row.attendance === 'Not marked').length
   }), [profileAttendanceCalendar]);
+
+  const attendanceRoster = useMemo(() => {
+    if (!attendanceDate) return [];
+    const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const weekday = weekdayNames[new Date(`${attendanceDate}T00:00:00`).getDay()];
+    return students.filter(student => {
+      if (student.class_start_date && String(student.class_start_date).slice(0, 10) > attendanceDate) return false;
+      const history = attendanceScheduleHistory.filter(row => row.student_id === student.id);
+      const scheduleEvents = history.filter(row => row.event_type === 'Schedule Change').sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)));
+      const statusEvents = history.filter(row => row.event_type === 'Status Change').sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)));
+      const firstSchedule = scheduleEvents[0];
+      const effectiveSchedule = scheduleEvents.filter(row => String(row.event_date).slice(0, 10) <= attendanceDate).at(-1);
+      const classDays = effectiveSchedule?.new_class_days || firstSchedule?.previous_class_days || student.current_class_days || student.class_days || '';
+      if (!classDays.toLowerCase().includes(weekday.toLowerCase())) return false;
+      const firstStatus = statusEvents[0];
+      const effectiveStatus = statusEvents.filter(row => String(row.event_date).slice(0, 10) <= attendanceDate).at(-1);
+      const status = effectiveStatus?.new_status || (firstStatus && String(firstStatus.event_date).slice(0, 10) > attendanceDate ? firstStatus.previous_status : null) || (student.status_effective_date && String(student.status_effective_date).slice(0, 10) > attendanceDate ? 'Active' : student.current_status) || 'Active';
+      return status === 'Active';
+    }).map(student => {
+      const record = attendanceRows.find(row => row.student_id === student.id && String(row.class_date).slice(0, 10) === attendanceDate);
+      return { ...student, attendance: record?.attendance || '', attendance_remarks: record?.remarks || '' };
+    }).sort((a, b) => String(a.full_name || '').localeCompare(String(b.full_name || '')));
+  }, [students, attendanceDate, attendanceRows, attendanceScheduleHistory]);
 
   useEffect(() => {
     const timer = setInterval(() => setClockNow(new Date()), 1000);
@@ -296,27 +321,41 @@ function App() {
 
 
   const loadAttendance = useCallback(async () => {
-    const { data, error: e } = await supabase.from('student_attendance')
-      .select('id, student_id, class_date, attendance, remarks, students(student_id, full_name)')
-      .order('class_date', { ascending: false }).limit(500);
-    if (e) setError(e.message); else setAttendanceRows(data || []);
-  }, []);
+    if (!attendanceDate) return;
+    const [attendanceResult, historyResult] = await Promise.all([
+      supabase.from('student_attendance')
+        .select('id, student_id, class_date, attendance, remarks')
+        .eq('class_date', attendanceDate),
+      supabase.from('student_history')
+        .select('student_id, event_date, event_type, previous_class_days, new_class_days, previous_status, new_status')
+        .in('event_type', ['Schedule Change', 'Status Change'])
+        .order('event_date', { ascending: true }).limit(5000)
+    ]);
+    if (attendanceResult.error) setError('Could not load attendance: ' + attendanceResult.error.message);
+    else setAttendanceRows(attendanceResult.data || []);
+    if (historyResult.error) setError('Could not load student schedule history: ' + historyResult.error.message);
+    else setAttendanceScheduleHistory(historyResult.data || []);
+  }, [attendanceDate]);
 
   useEffect(() => {
     if (session && activeTab === 'Attendance') loadAttendance();
   }, [session, activeTab, loadAttendance]);
 
-  async function saveAttendance(event) {
-    event.preventDefault();
-    if (!isAdmin || !attendanceStudent) return;
-    setSaving(true); setError(''); setNotice('');
-    const { error: e } = await supabase.from('student_attendance').upsert({
-      student_id: attendanceStudent, class_date: attendanceDate,
-      attendance: attendanceValue, remarks: entryRemarks || null, created_by: session.user.id
-    }, { onConflict: 'student_id,class_date' });
-    if (e) setError(e.message);
-    else { setNotice('Attendance saved.'); setEntryRemarks(''); await loadAttendance(); }
-    setSaving(false);
+  async function saveStudentAttendance(studentId, attendance) {
+    if (!isAdmin || !studentId || !attendance) return;
+    setAttendanceSavingId(studentId); setError(''); setNotice('');
+    const existing = attendanceRows.find(row => row.student_id === studentId && String(row.class_date).slice(0, 10) === attendanceDate);
+    const { data, error: saveError } = await supabase.from('student_attendance').upsert({
+      student_id: studentId, class_date: attendanceDate, attendance,
+      remarks: existing?.remarks || null, created_by: session.user.id
+    }, { onConflict: 'student_id,class_date' }).select('id, student_id, class_date, attendance, remarks').single();
+    if (saveError) setError('Could not save attendance: ' + saveError.message);
+    else {
+      setAttendanceRows(current => [...current.filter(row => !(row.student_id === studentId && String(row.class_date).slice(0, 10) === attendanceDate)), data]);
+      setProfileAttendance(current => [...current.filter(row => !(row.student_id === studentId && String(row.class_date).slice(0, 10) === attendanceDate)), data]);
+      setNotice('Attendance saved successfully.');
+    }
+    setAttendanceSavingId('');
   }
 
   async function saveHistory(event) {
@@ -928,18 +967,31 @@ function App() {
 
     </section>}
 
-    {activeTab === 'Attendance' && <section className="content-card">
-      <div className="section-heading"><div><p className="eyebrow">CLASSROOM</p><h2>Student attendance</h2><p className="muted">Daily attendance register.</p></div></div>
-      {isAdmin && <form className="inline-entry-form" onSubmit={saveAttendance}>
-        <label>Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
-        <label>Student<select value={attendanceStudent} onChange={e => setAttendanceStudent(e.target.value)} required><option value="">Select student</option>{students.map(s => <option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
-        <label>Attendance<select value={attendanceValue} onChange={e => setAttendanceValue(e.target.value)}><option>Present</option><option>Absent</option><option>Leave</option></select></label>
-        <label>Remarks<input value={entryRemarks} onChange={e => setEntryRemarks(e.target.value)} /></label>
-        <button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save attendance'}</button>
-      </form>}
-      <div className="table-wrap"><table><thead><tr><th>Date</th><th>Student ID</th><th>Name</th><th>Status</th><th>Remarks</th></tr></thead><tbody>
-        {attendanceRows.map(r => <tr key={r.id}><td>{r.class_date}</td><td>{r.students?.student_id || '—'}</td><td>{r.students?.full_name || '—'}</td><td>{r.attendance}</td><td>{r.remarks || '—'}</td></tr>)}
-      </tbody></table>{!attendanceRows.length && <div className="empty-state">No attendance records found.</div>}</div>
+    {activeTab === 'Attendance' && <section className="content-card attendance-register">
+      <div className="section-heading"><div><p className="eyebrow">CLASSROOM</p><h2>Student Attendance</h2><p className="muted">Choose a class date. Students scheduled for that day will appear automatically.</p></div></div>
+      <div className="attendance-date-control"><label>Attendance Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label><div className="attendance-date-label">{attendanceDate ? new Intl.DateTimeFormat('en', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${attendanceDate}T00:00:00`)) : 'Select a date'}</div></div>
+      <div className="attendance-roster-summary">
+        <div><span>Students</span><strong>{attendanceRoster.length}</strong></div>
+        <div><span>Present</span><strong>{attendanceRoster.filter(row => row.attendance === 'Present').length}</strong></div>
+        <div><span>Absent</span><strong>{attendanceRoster.filter(row => row.attendance === 'Absent').length}</strong></div>
+        <div><span>Leave</span><strong>{attendanceRoster.filter(row => row.attendance === 'Leave').length}</strong></div>
+        <div><span>Not marked</span><strong>{attendanceRoster.filter(row => !row.attendance).length}</strong></div>
+      </div>
+      <div className="attendance-roster-heading"><h3>Class List</h3><span>{attendanceRoster.length} students · A–Z</span></div>
+      <div className="attendance-roster-list">
+        {attendanceRoster.map((student, index) => <div className="attendance-roster-row" key={student.id}>
+          <div className="attendance-roster-number">{index + 1}</div>
+          <div className="attendance-roster-student"><strong>{student.full_name}</strong><small>{student.student_id} · {student.subject}</small></div>
+          <div className="attendance-roster-status">
+            {isAdmin ? <select aria-label={`Attendance status for ${student.full_name}`} value={student.attendance} disabled={attendanceSavingId === student.id} onChange={event => saveStudentAttendance(student.id, event.target.value)}>
+              <option value="">Select status</option><option value="Present">Present</option><option value="Absent">Absent</option><option value="Leave">Leave</option>
+            </select> : <span className={'status-pill ' + (student.attendance === 'Present' ? 'active' : student.attendance ? 'discontinued' : 'pending')}>{student.attendance || 'Not marked'}</span>}
+            {attendanceSavingId === student.id && <small className="attendance-saving-label">Saving…</small>}
+          </div>
+        </div>)}
+        {!attendanceRoster.length && <div className="empty-state"><strong>No classes scheduled</strong><span>There are no active students scheduled for this date.</span></div>}
+      </div>
+      <p className="attendance-register-note">Changing a student's status saves automatically and updates the Attendance tab in that student's profile.</p>
     </section>}
 
     {activeTab === 'History' && <section className="content-card">
