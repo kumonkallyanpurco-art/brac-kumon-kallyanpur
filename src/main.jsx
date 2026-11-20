@@ -88,14 +88,13 @@ function App() {
     catch { /* storage may be unavailable */ }
   }, [activeTab]);
   const [attendanceRows, setAttendanceRows] = useState([]);
-  const [historyRows, setHistoryRows] = useState([]);
   const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
   const [attendanceStudent, setAttendanceStudent] = useState('');
   const [attendanceValue, setAttendanceValue] = useState('Present');
   const [historyStudent, setHistoryStudent] = useState('');
-  const [historyDate, setHistoryDate] = useState(todayDhaka);
-  const [historyType, setHistoryType] = useState('Level Change');
-  const [historySubject, setHistorySubject] = useState('Math');
+  const [historyDate, setHistoryDate] = useState('');
+  const [historyType, setHistoryType] = useState('');
+  const [historySubject, setHistorySubject] = useState('');
   const [historyPrevious, setHistoryPrevious] = useState('');
   const [historyNew, setHistoryNew] = useState('');
   const [entryRemarks, setEntryRemarks] = useState('');
@@ -298,17 +297,9 @@ function App() {
     if (e) setError(e.message); else setAttendanceRows(data || []);
   }, []);
 
-  const loadHistory = useCallback(async () => {
-    const { data, error: e } = await supabase.from('student_history')
-      .select('id, student_id, event_date, event_type, subject, previous_level, new_level, test_level, test_result, previous_class_days, new_class_days, previous_status, new_status, remarks, students(student_id, full_name)')
-      .order('event_date', { ascending: false }).limit(500);
-    if (e) setError(e.message); else setHistoryRows(data || []);
-  }, []);
-
   useEffect(() => {
     if (session && activeTab === 'Attendance') loadAttendance();
-    if (session && activeTab === 'History') loadHistory();
-  }, [session, activeTab, loadAttendance, loadHistory]);
+  }, [session, activeTab, loadAttendance]);
 
   async function saveAttendance(event) {
     event.preventDefault();
@@ -335,7 +326,7 @@ function App() {
     else row.discontinued_reason_or_transfer_centre = historyNew || historyPrevious || null;
     const { error: e } = await supabase.from('student_history').insert(row);
     if (e) setError(e.message);
-    else { setNotice('History event added.'); setHistoryPrevious(''); setHistoryNew(''); setEntryRemarks(''); await loadHistory(); }
+    else { setNotice('History event added.'); setHistoryStudent(''); setHistoryDate(''); setHistoryType(''); setHistorySubject(''); setHistoryPrevious(''); setHistoryNew(''); setEntryRemarks(''); }
     setSaving(false);
   }
 
@@ -730,7 +721,7 @@ function App() {
             <button type="button" className={activeTab === 'Students' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Students');setSidebarOpen(false);setError('');setNotice('');setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}}}><span className="submenu-icon">◎</span><span>Student Profile</span></button>
             {isAdmin && <button type="button" className={activeTab === 'Fees' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Fees');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">৳</span><span>Fees</span></button>}
             <button type="button" className={activeTab === 'Attendance' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Attendance');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">✓</span><span>Attendance</span></button>
-            <button type="button" className={activeTab === 'History' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('History');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">＋</span><span>Add History</span></button>
+            <button type="button" className={activeTab === 'History' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('History');setSidebarOpen(false);setError('');setNotice('');setHistoryStudent('');setHistoryDate('');setHistoryType('');setHistorySubject('');setHistoryPrevious('');setHistoryNew('');setEntryRemarks('');}}><span className="submenu-icon">＋</span><span>Add History</span></button>
           </div>}
         </div>
         {isAdmin && <button type="button" className={activeTab === 'Employees' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab('Employees');setSidebarOpen(false);setError('');setNotice('');}}>
@@ -878,20 +869,17 @@ function App() {
     </section>}
 
     {activeTab === 'History' && <section className="content-card">
-      <div className="section-heading"><div><p className="eyebrow">STUDENT PROGRESS</p><h2>Student history</h2><p className="muted">Add events without replacing previous history.</p></div></div>
+      <div className="section-heading"><div><p className="eyebrow">STUDENT PROGRESS</p><h2>Add History</h2></div></div>
       {isAdmin && <form className="inline-entry-form" onSubmit={saveHistory}>
         <label>Student<select value={historyStudent} onChange={e => setHistoryStudent(e.target.value)} required><option value="">Select student</option>{students.map(s => <option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
         <label>Date<input type="date" value={historyDate} onChange={e => setHistoryDate(e.target.value)} required /></label>
-        <label>Event<select value={historyType} onChange={e => {setHistoryType(e.target.value);setHistoryPrevious('');setHistoryNew('');}}>{['Level Change','Achievement Test','Schedule Change','Status Change','Transfer In','Transfer Out'].map(x => <option key={x}>{x}</option>)}</select></label>
-        <label>Subject<select value={historySubject} onChange={e => setHistorySubject(e.target.value)}><option>Math</option><option>English</option><option>Both</option></select></label>
+        <label>Event<select value={historyType} onChange={e => {setHistoryType(e.target.value);setHistoryPrevious('');setHistoryNew('');}} required><option value="">Select event</option>{['Level Change','Achievement Test','Schedule Change','Status Change','Transfer In','Transfer Out'].map(x => <option key={x} value={x}>{x}</option>)}</select></label>
+        <label>Subject<select value={historySubject} onChange={e => setHistorySubject(e.target.value)} required><option value="">Select subject</option><option>Math</option><option>English</option><option>Both</option></select></label>
         <label>Previous / test level<input value={historyPrevious} onChange={e => setHistoryPrevious(e.target.value)} /></label>
         <label>New level / result / details<input value={historyNew} onChange={e => setHistoryNew(e.target.value)} /></label>
         <label>Remarks<input value={entryRemarks} onChange={e => setEntryRemarks(e.target.value)} /></label>
         <button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Add history event'}</button>
       </form>}
-      <div className="table-wrap"><table><thead><tr><th>Date</th><th>Student ID</th><th>Name</th><th>Event</th><th>Subject</th><th>Details</th><th>Remarks</th></tr></thead><tbody>
-        {historyRows.map(r => <tr key={r.id}><td>{r.event_date}</td><td>{r.students?.student_id || '—'}</td><td>{r.students?.full_name || '—'}</td><td>{r.event_type}</td><td>{r.subject || '—'}</td><td>{r.previous_level || r.test_level || r.previous_class_days || r.previous_status || ''}{r.new_level || r.test_result || r.new_class_days || r.new_status ? ' → ' + (r.new_level || r.test_result || r.new_class_days || r.new_status) : ''}</td><td>{r.remarks || '—'}</td></tr>)}
-      </tbody></table>{!historyRows.length && <div className="empty-state">No history events found.</div>}</div>
     </section>}
 
 
