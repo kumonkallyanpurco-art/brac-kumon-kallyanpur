@@ -90,6 +90,7 @@ function App() {
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [attendanceScheduleHistory, setAttendanceScheduleHistory] = useState([]);
   const [attendanceSavingId, setAttendanceSavingId] = useState('');
+  const [attendanceSearch, setAttendanceSearch] = useState('');
   const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
   const [historyStudent, setHistoryStudent] = useState('');
   const [historyDate, setHistoryDate] = useState('');
@@ -967,17 +968,20 @@ function App() {
 
     {activeTab === 'Attendance' && <section className="content-card attendance-register">
       <div className="section-heading"><div><p className="eyebrow">CLASSROOM</p><h2>Student Attendance</h2><p className="muted">Choose a class date. Students scheduled for that day will appear automatically.</p></div></div>
-      <div className="attendance-date-control"><label>Attendance Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label><div className="attendance-date-label">{attendanceDate ? new Intl.DateTimeFormat('en', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${attendanceDate}T00:00:00`)) : 'Select a date'}</div></div>
-      <div className="attendance-roster-summary">
-        <div><span>Students</span><strong>{attendanceRoster.length}</strong></div>
-        <div><span>Present</span><strong>{attendanceRoster.filter(row => row.attendance === 'Present').length}</strong></div>
-        <div><span>Absent</span><strong>{attendanceRoster.filter(row => row.attendance === 'Absent').length}</strong></div>
-        <div><span>Leave</span><strong>{attendanceRoster.filter(row => row.attendance === 'Leave').length}</strong></div>
-        <div><span>Not marked</span><strong>{attendanceRoster.filter(row => !row.attendance).length}</strong></div>
+      <div className="attendance-toolbar">
+        <label className="attendance-date-field">Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
+        <label className="attendance-search-field"><span>Search Student</span><input type="search" placeholder="Search by name or ID..." value={attendanceSearch} onChange={e => setAttendanceSearch(e.target.value)} /></label>
       </div>
-      <div className="attendance-roster-heading"><h3>Class List</h3><span>{attendanceRoster.length} students · A–Z</span></div>
+      <div className="attendance-quick-counts">
+        <span>{attendanceRoster.length} Students</span>
+        <span>Present <b>{attendanceRoster.filter(row => row.attendance === 'Present').length}</b></span>
+        <span>Absent <b>{attendanceRoster.filter(row => row.attendance === 'Absent').length}</b></span>
+        <span>Leave <b>{attendanceRoster.filter(row => row.attendance === 'Leave').length}</b></span>
+        <span>Pending <b>{attendanceRoster.filter(row => !row.attendance).length}</b></span>
+      </div>
+      <div className="attendance-roster-heading"><h3>Class List</h3><span>{attendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).length} shown</span></div>
       <div className="attendance-roster-list">
-        {attendanceRoster.map((student, index) => <div className="attendance-roster-row" key={student.id}>
+        {attendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).map((student, index) => <div className="attendance-roster-row" key={student.id}>
           <div className="attendance-roster-number">{index + 1}</div>
           <div className="attendance-roster-student"><strong>{student.full_name}</strong><small>{student.student_id} · {student.subject}</small></div>
           <div className="attendance-roster-status">
