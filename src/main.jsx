@@ -670,7 +670,7 @@ function App() {
           <span className="sidebar-icon">⌂</span><span>Dashboard</span>
         </button>
         <div className="sidebar-menu-group">
-          <button type="button" aria-expanded={studentMenuOpen} className={['AddStudent','Students','Fees','Attendance'].includes(activeTab) ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setStudentMenuOpen(v => !v)}>
+          <button type="button" aria-expanded={studentMenuOpen} className={['AddStudent','Students','Fees','Attendance','History'].includes(activeTab) ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setStudentMenuOpen(v => !v)}>
             <span className="sidebar-icon">▦</span><span>Student</span><span className="sidebar-chevron">{studentMenuOpen ? '⌃' : '⌄'}</span>
           </button>
           {studentMenuOpen && <div className="sidebar-submenu">
@@ -678,11 +678,9 @@ function App() {
             <button type="button" className={activeTab === 'Students' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Students');setSidebarOpen(false);setError('');setNotice('');setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}}}><span className="submenu-icon">◎</span><span>Student Profile</span></button>
             {isAdmin && <button type="button" className={activeTab === 'Fees' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Fees');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">৳</span><span>Fees</span></button>}
             <button type="button" className={activeTab === 'Attendance' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Attendance');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">✓</span><span>Attendance</span></button>
+            <button type="button" className={activeTab === 'History' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('History');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">↻</span><span>History</span></button>
           </div>}
         </div>
-        <button type="button" className={activeTab === 'History' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab('History');setSidebarOpen(false);setError('');setNotice('');}}>
-          <span className="sidebar-icon">↻</span><span>History</span>
-        </button>
         {isAdmin && <button type="button" className={activeTab === 'Employees' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab('Employees');setSidebarOpen(false);setError('');setNotice('');}}>
           <span className="sidebar-icon">♙</span><span>Employees</span>
         </button>}
@@ -753,7 +751,7 @@ function App() {
       <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><span className={'status-pill ' + (selectedProfile.current_status === 'Active' ? 'active' : 'discontinued')}>{selectedProfile.current_status || 'Inactive'}</span></div></div>
       <div className="profile-tabs">
         {['Overview','Class Schedule','Learning Progress','Achievement Test','Attendance'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}
-        <button type="button" className="tab-button profile-back-button" onClick={() => {setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}}}>Back</button>
+        <button type="button" className={profileTab === 'History' ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab('History')}>History</button>
       </div>
       {profileLoading && <div className="empty-state">Loading student history…</div>}
       {!profileLoading && profileTab === 'Overview' && <div className="profile-detail-grid">
@@ -781,6 +779,9 @@ function App() {
       {!profileLoading && profileTab === 'Achievement Test' && <div className="table-wrap"><table><thead><tr><th>Test Date</th><th>Subject</th><th>Test Level</th><th>Result</th><th>Remarks</th></tr></thead><tbody>
         {profileHistory.filter(x => x.event_type === 'Achievement Test').map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.subject || '—'}</td><td>{x.test_level || '—'}</td><td>{x.test_result || '—'}</td><td>{x.remarks || '—'}</td></tr>)}
       </tbody></table>{!profileHistory.some(x => x.event_type === 'Achievement Test') && <div className="empty-state">No achievement tests recorded.</div>}</div>}
+      {!profileLoading && profileTab === 'History' && <div className="table-wrap"><table><thead><tr><th>Date</th><th>Event</th><th>Subject</th><th>Previous</th><th>New / Details</th><th>Remarks</th></tr></thead><tbody>
+        {profileHistory.map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.event_type}</td><td>{x.subject || '—'}</td><td>{x.previous_level || x.test_level || x.previous_class_days || x.previous_class_time || x.previous_status || '—'}</td><td>{x.new_level || x.test_result || x.new_class_days || x.new_class_time || x.new_status || x.discontinued_reason_or_transfer_centre || '—'}</td><td>{x.remarks || '—'}</td></tr>)}
+      </tbody></table>{!profileHistory.length && <div className="empty-state">No history records found for this student.</div>}</div>}
       {!profileLoading && profileTab === 'Attendance' && <>
         <div className="stat-grid fee-stats">
           <article className="stat-card"><span>Present</span><strong>{profileAttendance.filter(x => x.attendance === 'Present').length}</strong></article>
