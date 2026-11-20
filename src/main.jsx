@@ -723,7 +723,7 @@ function App() {
     </section>}
 
 
-    {activeTab === 'Students' && <section className="content-card">
+    {activeTab === 'Students' && !selectedProfile && <section className="content-card">
       <div className="section-heading"><div><p className="eyebrow">STUDENT MANAGEMENT</p><h2>Student Profile</h2><p className="muted">Search by student name to view an individual student’s details.</p></div></div>
       <div className="student-profile-search">
         <input className="search-input" placeholder="Search student by name…" value={search} onChange={e => {setSearch(e.target.value);setSelectedProfile(null);setProfileHistory([]);setProfileAttendance([]);}} />
