@@ -898,7 +898,7 @@ function App() {
       <p className="muted fee-note">Expected fees follow the workbook rules: class start date determines the first month's half/full rate; subject changes apply from their charged-from month; No Fee? students are exempt; stop-billing dates end charges from that month. The expected monthly amount is saved separately from each payment, so partial payments do not change the monthly due. Custom amounts are saved as a month-specific assessment.</p>
     </section>}
     {showForm && isAdmin && <div className="modal-backdrop" role="presentation"><form className="student-modal" onSubmit={saveStudent}>
-      <div className="modal-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2>{editingId ? 'Edit student' : 'Add student'}</h2></div><button type="button" className="close-button" onClick={() => setShowForm(false)}>×</button></div>
+      <div className="modal-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2>{editingId ? 'Edit student' : 'Add student'}</h2></div><button type="button" className="close-button" onClick={() => {setShowForm(false);if(activeTab === 'AddStudent') setActiveTab('Students');}}>×</button></div>
       <div className="form-grid">
         <label>Student ID<input value={form.student_id} onChange={e => setForm({...form, student_id:e.target.value})} required disabled={!!editingId} /></label>
         <label>Student name<input value={form.full_name} onChange={e => setForm({...form, full_name:e.target.value})} required /></label>
@@ -921,7 +921,7 @@ function App() {
         <label className="full-width">Remarks<textarea rows="3" value={form.remarks || ''} onChange={e => setForm({...form, remarks:e.target.value})} /></label>
       </div>
       {error && <p className="error-message">{error}</p>}
-      <div className="modal-actions"><button type="button" className="button-light" onClick={() => setShowForm(false)}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save student'}</button></div>
+      <div className="modal-actions"><button type="button" className="button-light" onClick={() => {setShowForm(false);if(activeTab === 'AddStudent') setActiveTab('Students');}}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save student'}</button></div>
     </form></div>}
     <footer className="app-footer">BRAC Kumon Kallyanpur Center <span>·</span> Secure online workspace</footer>
     </div>
