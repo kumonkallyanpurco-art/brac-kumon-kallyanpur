@@ -737,7 +737,7 @@ function App() {
       <div className="top-actions"><span className="user-chip">{profile?.full_name || session.user.email} · {isAdmin ? 'Admin' : 'Instructor'}</span><button className="button-light" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
     </header>
 
-    {activeTab === 'Dashboard' && <section className="page-heading"><div><p className="eyebrow">CENTER MANAGEMENT</p><h1>Dashboard</h1><p className="muted">Student records and center operations in one place.</p></div><span className="live-indicator">Online database</span></section>}
+    {activeTab === 'Dashboard' && <section className="page-heading"><div><h1>Dashboard</h1></div></section>}
 
     {error && <div className="alert error-box">{error}</div>}
     {notice && <div className="alert success-box">{notice}</div>}
