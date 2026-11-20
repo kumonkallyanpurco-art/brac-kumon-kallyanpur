@@ -71,10 +71,15 @@ function App() {
   const [profileTab, setProfileTab] = useState(() => { try { return window.localStorage.getItem('brac-kumon-profile-tab') || 'Overview'; } catch { return 'Overview'; } });
   const [profileLoading, setProfileLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState(() => {
+  const [activeTab, setActiveTabState] = useState(() => {
     try { return window.localStorage.getItem('brac-kumon-active-tab') || 'Dashboard'; }
     catch { return 'Dashboard'; }
   });
+  // Save the selected page immediately, so a quick browser refresh cannot lose it.
+  function setActiveTab(nextTab) {
+    setActiveTabState(nextTab);
+    try { window.localStorage.setItem('brac-kumon-active-tab', nextTab); } catch { /* storage may be unavailable */ }
+  }
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentMenuOpen, setStudentMenuOpen] = useState(false);
   useEffect(() => { try { window.localStorage.setItem('brac-kumon-profile-tab', profileTab); } catch { /* storage may be unavailable */ } }, [profileTab]);
