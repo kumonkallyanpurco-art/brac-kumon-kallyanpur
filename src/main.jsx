@@ -744,34 +744,37 @@ function App() {
     setProfileLoading(false);
   }
 
-  async function deleteStudentPermanently(student) {
+  async function toggleStudentArchive(student) {
     if (!isAdmin || !student?.id || deletingStudent) return;
+    const isActive = (student.current_status || 'Active') === 'Active';
+    const nextStatus = isActive ? 'Inactive' : 'Active';
+    const action = isActive ? 'archive' : 'restore';
     const confirmed = window.confirm(
-      `Permanently delete ${student.full_name} (Student ID: ${student.student_id}) and all linked fee payments, fee assessments, attendance, learning history, status history, and subject changes? This cannot be undone. Audit log entries will be retained.`
+      isActive
+        ? `Archive ${student.full_name} (Student ID: ${student.student_id})? The student will become Inactive. All payment, achievement test, learning, attendance, and history records will be kept.`
+        : `Restore ${student.full_name} (Student ID: ${student.student_id}) to Active status? All previous records will remain unchanged.`
     );
     if (!confirmed) return;
-    const typedId = window.prompt(`To confirm permanent deletion, type this Student ID exactly: ${student.student_id}`);
-    if (typedId !== student.student_id) {
-      setNotice('Deletion cancelled. Student ID did not match.');
-      return;
-    }
     setDeletingStudent(true);
     setError('');
     setNotice('');
-    const { data, error: deleteError } = await supabase.rpc('admin_delete_student_data', { p_student_uuid: student.id });
-    if (deleteError) {
-      setError('Could not delete student: ' + deleteError.message);
+    const { data, error: updateError } = await supabase
+      .from('students')
+      .update({ current_status: nextStatus, status_effective_date: todayDhaka })
+      .eq('id', student.id)
+      .select('id, current_status, status_effective_date')
+      .single();
+    if (updateError || !data) {
+      setError(`Could not ${action} student: ${updateError?.message || 'Student record was not updated.'}`);
       setDeletingStudent(false);
       return;
     }
-    setStudents(current => current.filter(row => row.id !== student.id));
-    setAttendanceRows(current => current.filter(row => row.student_id !== student.id));
-    setAttendanceScheduleHistory(current => current.filter(row => row.student_id !== student.id));
-    setSelectedProfile(null);
-    setProfileHistory([]);
-    setProfileAttendance([]);
-    try { window.localStorage.removeItem('brac-kumon-selected-student'); } catch { /* storage may be unavailable */ }
-    setNotice(`${data?.student_name || student.full_name} (ID: ${data?.student_id || student.student_id}) and linked records were permanently deleted.`);
+    const updatedStudent = { ...student, current_status: data.current_status, status_effective_date: data.status_effective_date };
+    setStudents(current => current.map(row => row.id === student.id ? { ...row, ...updatedStudent } : row));
+    setSelectedProfile(current => current?.id === student.id ? { ...current, ...updatedStudent } : current);
+    setNotice(isActive
+      ? `${student.full_name} has been archived. All student records have been retained.`
+      : `${student.full_name} has been restored to Active status.`);
     setDeletingStudent(false);
   }
 
@@ -1073,7 +1076,7 @@ function App() {
     </section>}
 
     {selectedProfile && activeTab === 'Students' && <section className="content-card student-profile-card">
-      <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><span className={'status-pill ' + (selectedProfile.current_status === 'Active' ? 'active' : 'discontinued')}>{selectedProfile.current_status || 'Inactive'}</span></div><div className="student-profile-header-actions">{isAdmin && <button type="button" className="danger-button compact" disabled={deletingStudent} onClick={() => deleteStudentPermanently(selectedProfile)}>{deletingStudent ? 'Deleting…' : 'Delete Student'}</button>}<button type="button" className="button-light compact search-student-button" onClick={() => { setSelectedProfile(null); setProfileHistory([]); setProfileAttendance([]); try { window.localStorage.removeItem('brac-kumon-selected-student'); } catch {} }}><span aria-hidden="true">⌕</span> Search Student</button></div></div>
+      <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><span className={'status-pill ' + (selectedProfile.current_status === 'Active' ? 'active' : 'discontinued')}>{selectedProfile.current_status || 'Inactive'}</span></div><div className="student-profile-header-actions">{isAdmin && <button type="button" className={(selectedProfile.current_status || 'Active') === 'Active' ? 'danger-button compact' : 'button-light compact'} disabled={deletingStudent} onClick={() => toggleStudentArchive(selectedProfile)}>{deletingStudent ? 'Saving…' : (selectedProfile.current_status || 'Active') === 'Active' ? 'Archive Student' : 'Restore Student'}</button>}<button type="button" className="button-light compact search-student-button" onClick={() => { setSelectedProfile(null); setProfileHistory([]); setProfileAttendance([]); try { window.localStorage.removeItem('brac-kumon-selected-student'); } catch {} }}><span aria-hidden="true">⌕</span> Search Student</button></div></div>
       <div className="profile-tabs">
         {['Overview','Class Schedule','Learning Progress','Achievement Test'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}
         <button type="button" className={profileTab === 'History' ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab('History')}>History</button>
