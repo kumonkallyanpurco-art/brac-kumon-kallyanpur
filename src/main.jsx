@@ -87,6 +87,13 @@ function App() {
     try { window.localStorage.setItem('brac-kumon-active-tab', activeTab); }
     catch { /* storage may be unavailable */ }
   }, [activeTab]);
+  const [attendanceRows, setAttendanceRows] = useState([]);
+  const [attendanceScheduleHistory, setAttendanceScheduleHistory] = useState([]);
+  const [attendanceSavingId, setAttendanceSavingId] = useState('');
+  const [attendanceSearch, setAttendanceSearch] = useState('');
+  const [attendanceView, setAttendanceView] = useState(() => { try { return window.localStorage.getItem('brac-kumon-attendance-view') || 'All Students'; } catch { return 'All Students'; } });
+  const [attendanceHistoryStudent, setAttendanceHistoryStudent] = useState(() => { try { return window.localStorage.getItem('brac-kumon-attendance-history-student') || null; } catch { return null; } });
+  const [attendanceDate, setAttendanceDate] = useState(() => { try { return window.localStorage.getItem('brac-kumon-attendance-date') || todayDhaka; } catch { return todayDhaka; } });
   // Keep the exact attendance sub-view and filters when the browser refreshes.
   useEffect(() => {
     try {
@@ -97,13 +104,6 @@ function App() {
       window.localStorage.setItem('brac-kumon-attendance-month', profileAttendanceMonth);
     } catch { /* storage may be unavailable */ }
   }, [attendanceHistoryStudent, attendanceView, attendanceDate, profileAttendanceMonth]);
-  const [attendanceRows, setAttendanceRows] = useState([]);
-  const [attendanceScheduleHistory, setAttendanceScheduleHistory] = useState([]);
-  const [attendanceSavingId, setAttendanceSavingId] = useState('');
-  const [attendanceSearch, setAttendanceSearch] = useState('');
-  const [attendanceView, setAttendanceView] = useState(() => { try { return window.localStorage.getItem('brac-kumon-attendance-view') || 'All Students'; } catch { return 'All Students'; } });
-  const [attendanceHistoryStudent, setAttendanceHistoryStudent] = useState(() => { try { return window.localStorage.getItem('brac-kumon-attendance-history-student') || null; } catch { return null; } });
-  const [attendanceDate, setAttendanceDate] = useState(() => { try { return window.localStorage.getItem('brac-kumon-attendance-date') || todayDhaka; } catch { return todayDhaka; } });
   const [historyStudent, setHistoryStudent] = useState('');
   const [historyDate, setHistoryDate] = useState('');
   const [historyType, setHistoryType] = useState('');
