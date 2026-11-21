@@ -505,7 +505,10 @@ function App() {
     const expected = assessment ? Number(assessment.expected_amount) : calculated.amount;
     setFeePlan(['Full Month','Half Month','Custom'].includes(plan) ? plan : 'Full Month');
     setFeeExpected(String(expected));
-    setFeeAmount('');
+    const alreadyPaid = feeRows
+      .filter(row => row.student_id === studentId && row.fee_type === 'Monthly Fee' && row.fee_for_month === Number(month) && row.fee_for_year === Number(year))
+      .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    setFeeAmount(String(Math.max(0, expected - alreadyPaid)));
   }
 
   async function saveFeeAssessment() {
@@ -533,9 +536,23 @@ function App() {
   async function saveFee(event) {
     event.preventDefault();
     if (!isAdmin || !feeStudent || !(Number(feeAmount) > 0)) return;
-    if (feeType === 'Monthly Fee' && !(Number(feeExpected) > 0)) {
-      setError('Set a valid expected monthly fee before recording this payment.');
-      return;
+    if (feeType === 'Monthly Fee') {
+      if (!(Number(feeExpected) > 0)) {
+        setError('This student has no monthly fee due for the selected month.');
+        return;
+      }
+      const alreadyPaid = feeRows
+        .filter(row => row.student_id === feeStudent && row.fee_type === 'Monthly Fee' && row.fee_for_month === Number(feeMonth) && row.fee_for_year === Number(feeYear))
+        .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+      const remaining = Math.max(0, Number(feeExpected) - alreadyPaid);
+      if (remaining <= 0) {
+        setError('The selected month is already fully paid.');
+        return;
+      }
+      if (Number(feeAmount) !== remaining) {
+        setError('Monthly fee must be recorded as one complete payment of ৳' + money(remaining) + '.');
+        return;
+      }
     }
     setSaving(true); setError(''); setNotice('');
     if (feeType === 'Monthly Fee') {
@@ -1164,9 +1181,54 @@ function App() {
         {trackerRows.map(({student,subject,feeType,due,paid,balance,status,enrollmentPaid})=><tr key={student.id}><td>{student.student_id}</td><td>{student.full_name}</td><td>{subject}</td><td>{feeType}</td><td>৳{money(due)}</td><td>৳{money(paid)}</td><td>৳{money(balance)}</td><td><span className={'status-pill '+(status==='Paid'?'active':status==='Partial'?'pending':status==='Unpaid'?'discontinued':'')}>{status}</span></td><td>৳{money(enrollmentPaid)}</td></tr>)}
       </tbody></table>{!trackerRows.length && <div className="empty-state">No student records found.</div>}</div>
     </section>}
-    {activeTab === 'RecordPayment' && isAdmin && <section className="content-card">
-      <div className="section-heading"><div><p className="eyebrow">PAYMENTS</p><h2>Record Payment</h2><p className="muted">Payment entry setup will be completed next.</p></div></div>
-      <div className="empty-state">We will configure the Record Payment page after the Fee Tracker is reviewed.</div>
+    {activeTab === 'RecordPayment' && isAdmin && <section className="content-card record-payment-page">
+      <div className="section-heading"><div><p className="eyebrow">PAYMENTS</p><h2>Record Payment</h2><p className="muted">Record a student's monthly or enrollment fee payment.</p></div></div>
+      <form className="record-payment-form" onSubmit={saveFee}>
+        <div className="record-payment-section-title"><span>01</span><div><h3>Student Information</h3><p>Select the student who is making the payment.</p></div></div>
+        <div className="form-grid">
+          <label className="full-width">Select Student
+            <select value={feeStudent} onChange={e => {setFeeStudent(e.target.value);applyFeeDefaults(e.target.value);}} required>
+              <option value="">Choose a student</option>
+              {students.slice().sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||''))).map(student=><option key={student.id} value={student.id}>{student.full_name} · {student.student_id}</option>)}
+            </select>
+          </label>
+          {feeStudent && <div className="record-payment-student-preview">
+            <div><small>Student Name</small><strong>{students.find(student=>student.id===feeStudent)?.full_name || '—'}</strong></div>
+            <div><small>Student ID</small><strong>{students.find(student=>student.id===feeStudent)?.student_id || '—'}</strong></div>
+            <div><small>Enrolled Subject</small><strong>{students.find(student=>student.id===feeStudent)?.subject || '—'}</strong></div>
+            <div><small>Student Status</small><strong>{students.find(student=>student.id===feeStudent)?.current_status || 'Active'}</strong></div>
+          </div>}
+        </div>
+        <div className="record-payment-section-title"><span>02</span><div><h3>Payment Details</h3><p>Choose the fee type and enter the payment information.</p></div></div>
+        <div className="form-grid">
+          <label>Payment Type
+            <select value={feeType} onChange={e=>{setFeeType(e.target.value);setFeeAmount(e.target.value==='Monthly Fee' ? feeExpected : '');}}>
+              <option>Monthly Fee</option><option>Enrollment Fee</option>
+            </select>
+          </label>
+          <label>Payment Date<input type="date" value={feeDate} onChange={e=>setFeeDate(e.target.value)} required /></label>
+          {feeType === 'Monthly Fee' && <>
+            <label>Fee Month<select value={feeMonth} onChange={e=>{setFeeMonth(e.target.value);if(feeStudent)applyFeeDefaults(feeStudent,e.target.value,feeYear);}}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label>
+            <label>Fee Year<select value={feeYear} onChange={e=>{setFeeYear(e.target.value);if(feeStudent)applyFeeDefaults(feeStudent,feeMonth,e.target.value);}}>{Array.from({length:8},(_,i)=>2026+i).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
+            <label>Fee Plan<select value={feePlan} onChange={e=>setFeePlan(e.target.value)}><option>Full Month</option><option>Half Month</option><option>Custom</option></select></label>
+            <label>Monthly Fee Due (৳)<input type="number" value={feeExpected} onChange={e=>{setFeeExpected(e.target.value);setFeeAmount(e.target.value);}} min="0" step="1" required /></label>
+            <label>Amount Received (৳)<input type="number" value={feeAmount} readOnly min="1" /></label>
+            <div className="record-payment-info full-width">
+              <span>Already Paid: <strong>৳{money(feeStudent ? feePaidByStudent[feeStudent] || 0 : 0)}</strong></span>
+              <span>Remaining Balance: <strong>৳{money(Math.max(0,Number(feeExpected||0)-(feeStudent ? feePaidByStudent[feeStudent]||0 : 0)))}</strong></span>
+              <small>Monthly fee is recorded as one complete payment. The amount is calculated automatically.</small>
+            </div>
+          </>}
+          {feeType === 'Enrollment Fee' && <label>Amount Received (৳)<input type="number" value={feeAmount} onChange={e=>setFeeAmount(e.target.value)} min="1" step="1" placeholder="Enter enrollment fee amount" required /></label>}
+          <label>Payment Method<select value={feeMethod} onChange={e=>setFeeMethod(e.target.value)}><option>Cash</option><option>bKash</option><option>Bank Transfer</option><option>Card</option><option>Other</option></select></label>
+          <label>Receipt Number (Optional)<input value={feeReceipt} onChange={e=>setFeeReceipt(e.target.value)} placeholder="Enter receipt number" /></label>
+          <label className="full-width">Remarks (Optional)<textarea rows="3" value={feeRemarks} onChange={e=>setFeeRemarks(e.target.value)} placeholder="Add a note if needed" /></label>
+        </div>
+        <div className="record-payment-actions">
+          <button type="button" className="button-light" onClick={()=>{setFeeStudent('');setFeeAmount('');setFeeExpected('');setFeeRemarks('');setFeeReceipt('');}}>Clear Form</button>
+          <button type="submit" className="primary-button" disabled={saving || !feeStudent || !(Number(feeAmount)>0) || (feeType==='Monthly Fee' && !(Number(feeExpected)>0))}>{saving ? 'Saving…' : 'Save Payment'}</button>
+        </div>
+      </form>
     </section>}
     {showForm && isAdmin && <div className="modal-backdrop" role="presentation"><form className="student-modal" onSubmit={saveStudent}>
       <div className="modal-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2>{editingId ? 'Edit student' : 'Add student'}</h2></div><button type="button" className="close-button" onClick={() => {setShowForm(false);if(activeTab === 'AddStudent') setActiveTab('Students');}}>×</button></div>
