@@ -1411,3 +1411,30 @@ body,.app-layout.workspace{background:#f4f7f9;color:#263746}
   .app-main .student-profile-card .status-pill{font-size:12px;padding:6px 11px}
   .app-main .student-profile-card .profile-tabs .tab-button{min-height:46px;padding:11px 17px;font-size:14px}
 }
+
+
+/* Force View and Edit buttons to stay side by side */
+.app-main .student-search-result{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+}
+.app-main .student-search-identity{flex:1 1 auto!important;min-width:0}
+.app-main .student-search-actions{
+  display:flex!important;
+  flex:0 0 auto!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:8px!important;
+  width:auto!important;
+  white-space:nowrap!important;
+}
+.app-main .student-search-actions button{
+  display:inline-flex!important;
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:62px;
+}
