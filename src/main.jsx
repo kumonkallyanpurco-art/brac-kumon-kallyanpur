@@ -82,6 +82,7 @@ function App() {
   }
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentMenuOpen, setStudentMenuOpen] = useState(false);
+  const [paymentMenuOpen, setPaymentMenuOpen] = useState(false);
   useEffect(() => { try { window.localStorage.setItem('brac-kumon-profile-tab', profileTab); } catch { /* storage may be unavailable */ } }, [profileTab]);
   useEffect(() => {
     try { window.localStorage.setItem('brac-kumon-active-tab', activeTab); }
@@ -491,7 +492,7 @@ function App() {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (session && isAdmin && activeTab === 'Fees') loadFees();
+    if (session && isAdmin && ['FeeTracker','RecordPayment'].includes(activeTab)) loadFees();
   }, [session, isAdmin, activeTab, loadFees]);
 
   function applyFeeDefaults(studentId, month = feeMonth, year = feeYear) {
@@ -597,6 +598,38 @@ function App() {
     acc.expected += expected; acc.received += paid; acc.due += Math.max(0, expected - paid);
     return acc;
   }, { expected: 0, received: 0, due: 0 });
+  const trackerMonthStart = new Date(Number(feeYear), Number(feeMonth) - 1, 1);
+  const trackerNextMonth = new Date(Number(feeYear), Number(feeMonth), 1);
+  const trackerRows = students.map(student => {
+    const start = student.class_start_date ? new Date(String(student.class_start_date).slice(0,10) + 'T00:00:00') : null;
+    const stop = student.stop_billing_from ? new Date(String(student.stop_billing_from).slice(0,10) + 'T00:00:00') : null;
+    const stopMonth = stop ? new Date(stop.getFullYear(), stop.getMonth(), 1) : null;
+    const billed = !student.no_fee &&
+      (!start || start < trackerNextMonth) &&
+      (stopMonth ? trackerMonthStart < stopMonth : (student.current_status || 'Active') === 'Active');
+    const half = !!(billed && start && start >= trackerMonthStart && start < trackerNextMonth && start.getDate() >= 15);
+    const subject = monthlySubjectByStudent[student.id] || student.subject || '';
+    const due = billed ? Number(monthlyExpectedByStudent[student.id] || 0) : 0;
+    const paid = Number(feePaidByStudent[student.id] || 0);
+    const balance = due - paid;
+    const status = billed ? (paid >= due ? 'Paid' : paid > 0 ? 'Partial' : 'Unpaid') : (student.no_fee ? 'Exempt' : paid > 0 ? 'Check' : 'No fee');
+    const enrollmentPaid = feeRows.filter(row => row.student_id === student.id && row.fee_type === 'Enrollment Fee').reduce((sum,row)=>sum+Number(row.amount||0),0);
+    return {student,subject,feeType:billed?(half?'Half':'Full'):'—',due,paid,balance,status,enrollmentPaid,billed};
+  });
+  const trackerBilled = trackerRows.filter(row=>row.billed);
+  const trackerEnrollmentReceived = feeRows.filter(row=>row.fee_type==='Enrollment Fee' && row.fee_for_month===Number(feeMonth) && row.fee_for_year===Number(feeYear)).reduce((sum,row)=>sum+Number(row.amount||0),0);
+  const trackerCashReceived = feeRows.filter(row=>{const d=row.payment_date?new Date(String(row.payment_date).slice(0,10)+'T00:00:00'):null;return d && d>=trackerMonthStart && d<trackerNextMonth;}).reduce((sum,row)=>sum+Number(row.amount||0),0);
+  const trackerStats = {
+    billed: trackerBilled.length,
+    due: trackerRows.reduce((sum,row)=>sum+row.due,0),
+    collected: trackerRows.reduce((sum,row)=>sum+row.paid,0),
+    balance: trackerBilled.reduce((sum,row)=>sum+row.balance,0),
+    paid: trackerRows.filter(row=>row.status==='Paid').length,
+    partial: trackerRows.filter(row=>row.status==='Partial').length,
+    unpaid: trackerRows.filter(row=>row.status==='Unpaid').length,
+    enrollment: trackerEnrollmentReceived,
+    cash: trackerCashReceived
+  };
 
   const filteredStudents = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -866,17 +899,25 @@ function App() {
           <span className="sidebar-icon">⌂</span><span>Dashboard</span>
         </button>
         <div className="sidebar-menu-group">
-          <button type="button" aria-expanded={studentMenuOpen} className={['AddStudent','Students','Fees','Attendance','History'].includes(activeTab) ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setStudentMenuOpen(v => !v)}>
+          <button type="button" aria-expanded={studentMenuOpen} className={['AddStudent','Students','Attendance','History'].includes(activeTab) ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setStudentMenuOpen(v => !v)}>
             <span className="sidebar-icon">▦</span><span>Student</span><span className="sidebar-chevron">{studentMenuOpen ? '⌃' : '⌄'}</span>
           </button>
           {studentMenuOpen && <div className="sidebar-submenu">
             {isAdmin && <button type="button" className={activeTab === 'AddStudent' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('AddStudent');setSidebarOpen(false);openNewStudent();}}><span className="submenu-icon add-student-icon">＋</span><span>Add Student</span></button>}
             <button type="button" className={activeTab === 'Students' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Students');setSidebarOpen(false);setError('');setNotice('');setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}}}><span className="submenu-icon">◎</span><span>Student Profile</span></button>
-            {isAdmin && <button type="button" className={activeTab === 'Fees' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Fees');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">৳</span><span>Fees</span></button>}
             <button type="button" className={activeTab === 'Attendance' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Attendance');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">✓</span><span>Attendance</span></button>
             <button type="button" className={activeTab === 'History' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('History');setSidebarOpen(false);setError('');setNotice('');setHistoryStudent('');setHistoryDate('');setHistoryType('');setHistorySubject('');setHistoryPrevious('');setHistoryNew('');setHistoryPreviousDays('');setHistoryNewDays('');setHistoryPreviousTime('');setHistoryNewTime('');setEntryRemarks('');}}><span className="submenu-icon">＋</span><span>Add History</span></button>
           </div>}
         </div>
+        {isAdmin && <div className="sidebar-menu-group">
+          <button type="button" aria-expanded={paymentMenuOpen} className={['FeeTracker','RecordPayment'].includes(activeTab) ? 'sidebar-link active' : 'sidebar-link'} onClick={() => setPaymentMenuOpen(v => !v)}>
+            <span className="sidebar-icon">৳</span><span>Payments</span><span className="sidebar-chevron">{paymentMenuOpen ? '⌃' : '⌄'}</span>
+          </button>
+          {paymentMenuOpen && <div className="sidebar-submenu">
+            <button type="button" className={activeTab === 'FeeTracker' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('FeeTracker');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">▤</span><span>Fee Tracker</span></button>
+            <button type="button" className={activeTab === 'RecordPayment' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('RecordPayment');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">＋</span><span>Record Payment</span></button>
+          </div>}
+        </div>}
         {isAdmin && <button type="button" className={activeTab === 'Employees' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab('Employees');setSidebarOpen(false);setError('');setNotice('');}}>
           <span className="sidebar-icon">♙</span><span>Employees</span>
         </button>}
@@ -1098,36 +1139,30 @@ function App() {
       <div className="table-footer">Showing {filteredEmployees.length} of {employees.length} employees. Inactive employees remain saved for historical attendance and salary records.</div>
     </section>}
 
-    {activeTab === 'Fees' && isAdmin && <section className="content-card">
-      <div className="section-heading"><div><p className="eyebrow">PAYMENT MANAGEMENT</p><h2>Monthly fee management</h2><p className="muted">Record full or partial payments. Payment date and fee month are stored separately.</p></div></div>
-      <div className="fee-period"><label>Fee month<select value={feeMonth} onChange={e => {setFeeMonth(e.target.value);applyFeeDefaults(feeStudent,e.target.value,feeYear);}}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label><label>Year<input type="number" value={feeYear} onChange={e => {setFeeYear(e.target.value);if(e.target.value)applyFeeDefaults(feeStudent,feeMonth,e.target.value);}} /></label></div>
-      <div className="stat-grid fee-stats">
-        <article className="stat-card"><span>Expected monthly fee</span><strong>৳{money(monthlyFeeStats.expected)}</strong></article>
-        <article className="stat-card"><span>Received</span><strong>৳{money(monthlyFeeStats.received)}</strong></article>
-        <article className="stat-card"><span>Outstanding</span><strong>৳{money(monthlyFeeStats.due)}</strong></article>
+    {activeTab === 'FeeTracker' && isAdmin && <section className="content-card">
+      <div className="section-heading"><div><p className="eyebrow">PAYMENTS</p><h2>Monthly Fee Tracker</h2><p className="muted">Student fee status and collection summary for the selected month.</p></div></div>
+      <div className="fee-period">
+        <label>Select Month<select value={feeMonth} onChange={e=>setFeeMonth(e.target.value)}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label>
+        <label>Select Year<select value={feeYear} onChange={e=>setFeeYear(e.target.value)}>{Array.from({length:8},(_,i)=>2026+i).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
       </div>
-      <form className="inline-entry-form" onSubmit={saveFee}>
-        <label>Student<select value={feeStudent} onChange={e => { const id=e.target.value; setFeeStudent(id); if(feeType==='Monthly Fee') applyFeeDefaults(id); else setFeeAmount('1575'); }} required><option value="">Select student</option>{students.map(s=><option key={s.id} value={s.id}>{s.student_id} — {s.full_name}</option>)}</select></label>
-        <label>Fee type<select value={feeType} onChange={e => { const v=e.target.value; setFeeType(v); if(v==='Enrollment Fee') { setFeeExpected(''); setFeeAmount('1575'); } else { applyFeeDefaults(feeStudent); } }}><option>Monthly Fee</option><option>Enrollment Fee</option></select></label>
-        {feeType === 'Monthly Fee' ? <><label>Fee plan<select value={feePlan} onChange={e => { const p=e.target.value; setFeePlan(p); const s=students.find(x=>x.id===feeStudent); const calculated=s?getMonthlyFeeDefault(s,feeMonth,feeYear,subjectChanges):null; setFeeExpected(p==='Full Month'?(calculated?.subject==='Both'?'5400':'3000'):p==='Half Month'?(calculated?.subject==='Both'?'2955':'1650'):''); }}><option>Full Month</option><option>Half Month</option><option>Custom</option></select></label><label>Expected monthly fee (৳)<input type="number" min="0" step="0.01" value={feeExpected} onChange={e=>{setFeeExpected(e.target.value);setFeePlan('Custom');}} required /></label></> : <label>Enrollment fee amount<select value={feeAmount} onChange={e=>setFeeAmount(e.target.value)}><option value="1575">৳1,575 — Discount</option><option value="3300">৳3,300 — Without discount</option></select></label>}
-        <label>Payment date<input type="date" value={feeDate} onChange={e => setFeeDate(e.target.value)} required /></label>
-        {feeType === 'Monthly Fee' && <><label>Fee for month<select value={feeMonth} onChange={e => {setFeeMonth(e.target.value);applyFeeDefaults(feeStudent,e.target.value,feeYear);}}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label><label>Fee for year<input type="number" value={feeYear} onChange={e => {setFeeYear(e.target.value);applyFeeDefaults(feeStudent,feeMonth,e.target.value);}} required /></label></>}
-        <label>Payment amount (৳)<input type="number" min="1" step="0.01" value={feeAmount} onChange={e => setFeeAmount(e.target.value)} required /></label>
-        <label>Payment method<select value={feeMethod} onChange={e => setFeeMethod(e.target.value)}><option>Cash</option><option>Bank</option><option>bKash</option><option>Nagad</option><option>Other</option></select></label>
-        <label>Receipt number<input value={feeReceipt} onChange={e => setFeeReceipt(e.target.value)} /></label>
-        <label>Remarks<input value={feeRemarks} onChange={e => setFeeRemarks(e.target.value)} /></label>
-        {feeType === 'Monthly Fee' && <button type="button" className="button-light" disabled={saving || !feeStudent || !(Number(feeExpected) > 0)} onClick={saveFeeAssessment}>Save fee plan</button>}
-        <button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Record payment'}</button>
-      </form>
-      <h3>Monthly payment status</h3>
-      <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student name</th><th>Subject</th><th>Fee plan</th><th>Expected</th><th>Received</th><th>Due</th><th>Status</th></tr></thead><tbody>
-        {students.map(s=>{const expected=monthlyExpectedByStudent[s.id]||0;const paid=feePaidByStudent[s.id]||0;const plan=monthlyPlanByStudent[s.id];const status=expected===0&&paid>0?'Check':plan==='Exempt'?'Exempt':plan==='No Fee'?'No fee':paid>=expected?'Paid':paid>0?'Partial':'Unpaid';return <tr key={s.id}><td>{s.student_id}</td><td>{s.full_name}</td><td>{monthlySubjectByStudent[s.id]||s.subject}</td><td>{plan}</td><td>৳{money(expected)}</td><td>৳{money(paid)}</td><td>৳{money(Math.max(0,expected-paid))}</td><td>{status}</td></tr>;})}
-      </tbody></table></div>
-      <h3>Payment history</h3>
-      <div className="table-wrap"><table><thead><tr><th>Payment date</th><th>Student ID</th><th>Name</th><th>Fee type</th><th>Fee month</th><th>Amount</th><th>Method</th><th>Receipt</th></tr></thead><tbody>
-        {feeRows.map(r=><tr key={r.id}><td>{r.payment_date}</td><td>{r.students?.student_id||'—'}</td><td>{r.students?.full_name||'—'}</td><td>{r.fee_type}</td><td>{r.fee_for_month?new Date(2000,r.fee_for_month-1,1).toLocaleString('en',{month:'short'})+' '+r.fee_for_year:'—'}</td><td>৳{money(r.amount)}</td><td>{r.method||'—'}</td><td>{r.receipt_no||'—'}</td></tr>)}
-      </tbody></table>{!feeRows.length && <div className="empty-state">No payment records found.</div>}</div>
-      <p className="muted fee-note">Expected fees follow the workbook rules: class start date determines the first month's half/full rate; subject changes apply from their charged-from month; No Fee? students are exempt; stop-billing dates end charges from that month. The expected monthly amount is saved separately from each payment, so partial payments do not change the monthly due. Custom amounts are saved as a month-specific assessment.</p>
+      <div className="stat-grid fee-stats">
+        <article className="stat-card"><span>Students Billed</span><strong>{trackerStats.billed}</strong></article>
+        <article className="stat-card"><span>Total Fee Due</span><strong>৳{money(trackerStats.due)}</strong></article>
+        <article className="stat-card"><span>Collected (This Month's Fee)</span><strong>৳{money(trackerStats.collected)}</strong></article>
+        <article className="stat-card"><span>Balance Due</span><strong>৳{money(trackerStats.balance)}</strong></article>
+        <article className="stat-card"><span>Paid</span><strong>{trackerStats.paid}</strong></article>
+        <article className="stat-card"><span>Partial</span><strong>{trackerStats.partial}</strong></article>
+        <article className="stat-card"><span>Unpaid</span><strong>{trackerStats.unpaid}</strong></article>
+        <article className="stat-card"><span>Enrollment Fee Received</span><strong>৳{money(trackerStats.enrollment)}</strong></article>
+        <article className="stat-card"><span>Total Cash Received</span><strong>৳{money(trackerStats.cash)}</strong></article>
+      </div>
+      <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student Name</th><th>Subject (This Month)</th><th>Fee Type</th><th>Fee Due</th><th>Paid</th><th>Balance</th><th>Status</th><th>Enrollment Fee Paid (To Date)</th></tr></thead><tbody>
+        {trackerRows.map(({student,subject,feeType,due,paid,balance,status,enrollmentPaid})=><tr key={student.id}><td>{student.student_id}</td><td>{student.full_name}</td><td>{subject}</td><td>{feeType}</td><td>৳{money(due)}</td><td>৳{money(paid)}</td><td>৳{money(balance)}</td><td><span className={'status-pill '+(status==='Paid'?'active':status==='Partial'?'pending':status==='Unpaid'?'discontinued':'')}>{status}</span></td><td>৳{money(enrollmentPaid)}</td></tr>)}
+      </tbody></table>{!trackerRows.length && <div className="empty-state">No student records found.</div>}</div>
+    </section>}
+    {activeTab === 'RecordPayment' && isAdmin && <section className="content-card">
+      <div className="section-heading"><div><p className="eyebrow">PAYMENTS</p><h2>Record Payment</h2><p className="muted">Payment entry setup will be completed next.</p></div></div>
+      <div className="empty-state">We will configure the Record Payment page after the Fee Tracker is reviewed.</div>
     </section>}
     {showForm && isAdmin && <div className="modal-backdrop" role="presentation"><form className="student-modal" onSubmit={saveStudent}>
       <div className="modal-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2>{editingId ? 'Edit student' : 'Add student'}</h2></div><button type="button" className="close-button" onClick={() => {setShowForm(false);if(activeTab === 'AddStudent') setActiveTab('Students');}}>×</button></div>
