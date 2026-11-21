@@ -1107,3 +1107,11 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
 .fee-stats .stat-card span{font-size:9px;line-height:1.35;font-weight:650}
 .fee-stats .stat-card strong{font-size:18px;line-height:1.2;margin:5px 0 0;font-weight:800}
 @media(max-width:760px){.fee-stats .stat-card{padding:9px 10px;min-height:64px}.fee-stats .stat-card span{font-size:8px}.fee-stats .stat-card strong{font-size:16px;margin-top:4px}}
+
+
+/* Fee Tracker summary dropdown */
+.fee-summary-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;padding:11px 14px;margin:10px 0 12px;border:1px solid var(--kumon-border,#dce6df);border-radius:10px;background:#f7fafb;color:var(--kumon-deep,#173f72);font-size:12px;font-weight:750;text-align:left}
+.fee-summary-toggle:hover{background:#eef6f9}
+.fee-summary-chevron{font-size:18px;line-height:1;transition:transform .18s ease}
+.fee-summary-toggle.is-open .fee-summary-chevron{transform:rotate(180deg)}
+.fee-tracker .fee-stats{margin:0 0 18px}
