@@ -1438,3 +1438,26 @@ body,.app-layout.workspace{background:#f4f7f9;color:#263746}
   width:auto!important;
   min-width:62px;
 }
+
+
+/* Clear, high-contrast parent labels while Student / Payments submenus are active */
+.app-sidebar .sidebar-menu-group > .sidebar-link.active{
+  background:#eaf4fa!important;
+  color:#004f82!important;
+  border:1px solid #c7e0ef!important;
+  box-shadow:0 3px 10px #001f3526!important;
+}
+.app-sidebar .sidebar-menu-group > .sidebar-link.active > span:not(.sidebar-chevron){
+  color:#004f82!important;
+  opacity:1!important;
+  font-weight:800!important;
+  text-shadow:none!important;
+}
+.app-sidebar .sidebar-menu-group > .sidebar-link.active .sidebar-icon{
+  color:#e17b1d!important;
+}
+.app-sidebar .sidebar-menu-group > .sidebar-link.active .sidebar-chevron{
+  color:#004f82!important;
+  opacity:1!important;
+  font-weight:800!important;
+}
