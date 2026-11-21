@@ -68,7 +68,7 @@ function App() {
   const [profileHistory, setProfileHistory] = useState([]);
   const [profileAttendance, setProfileAttendance] = useState([]);
   const [profileAttendanceMonth, setProfileAttendanceMonth] = useState(todayDhaka.slice(0, 7));
-  const [profileTab, setProfileTab] = useState(() => { try { return window.localStorage.getItem('brac-kumon-profile-tab') || 'Overview'; } catch { return 'Overview'; } });
+  const [profileTab, setProfileTab] = useState(() => { try { const saved = window.localStorage.getItem('brac-kumon-profile-tab'); return ['Overview','Class Schedule','Learning Progress','Achievement Test','History'].includes(saved) ? saved : 'Overview'; } catch { return 'Overview'; } });
   const [profileLoading, setProfileLoading] = useState(false);
 
   const [activeTab, setActiveTabState] = useState(() => {
