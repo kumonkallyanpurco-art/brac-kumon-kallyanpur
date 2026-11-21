@@ -638,7 +638,7 @@ function App() {
   const dashboardLeaveCount = dashboardEmployeeAttendance
     .filter(row => ['leave', 'on leave'].includes(String(row.attendance_status || '').toLowerCase())).length;
 
-  async async function openAttendanceHistory(student) {
+  async function openAttendanceHistory(student) {
     setAttendanceHistoryStudent(student.id);
     setProfileAttendanceMonth(todayDhaka.slice(0, 7));
     await openStudentProfile(student, true);
