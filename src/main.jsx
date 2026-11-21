@@ -988,8 +988,8 @@ function App() {
         <label>Class Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
         <label className="attendance-search-field">Search Student<input type="search" placeholder="Search by name or ID..." value={attendanceSearch} onChange={e => setAttendanceSearch(e.target.value)} /></label>
       </div>
-      <div className="attendance-view-tabs" role="tablist" aria-label="Attendance student lists">
-        {['All Students', 'Today’s Class', 'New Enrollment'].map(tab => <button type="button" key={tab} role="tab" aria-selected={attendanceView === tab} className={attendanceView === tab ? 'active' : ''} onClick={() => setAttendanceView(tab)}>{tab}</button>)}
+      <div className="profile-tabs attendance-view-tabs" role="tablist" aria-label="Attendance student lists">
+        {['All Students', 'Today’s Class', 'New Enrollment'].map(tab => <button type="button" key={tab} role="tab" aria-selected={attendanceView === tab} className={attendanceView === tab ? 'tab-button active' : 'tab-button'} onClick={() => setAttendanceView(tab)}>{tab}</button>)}
       </div>
       <div className="attendance-roster-heading"><h3>{attendanceView}</h3><span>{visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).length} students</span></div>
       <div className="attendance-roster-list">
