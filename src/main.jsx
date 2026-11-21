@@ -913,7 +913,7 @@ function App() {
       <div className="sidebar-brand"><div className="brand-mark">BK</div><div><strong>BRAC Kumon</strong><span>Kallyanpur Center</span></div></div>
       <p className="sidebar-label">MAIN MENU</p>
       <nav className="sidebar-nav">
-        <button type="button" className={activeTab === 'Dashboard' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab('Dashboard');setSidebarOpen(false);setError('');setNotice('');}}>
+        <button type="button" className={activeTab === 'Dashboard' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setShowForm(false);setActiveTab('Dashboard');setSidebarOpen(false);setError('');setNotice('');}}>
           <span className="sidebar-icon">⌂</span><span>Dashboard</span>
         </button>
         <div className="sidebar-menu-group">
@@ -922,9 +922,9 @@ function App() {
           </button>
           {studentMenuOpen && <div className="sidebar-submenu">
             {isAdmin && <button type="button" className={activeTab === 'AddStudent' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('AddStudent');setSidebarOpen(false);openNewStudent();}}><span className="submenu-icon add-student-icon">＋</span><span>Add Student</span></button>}
-            <button type="button" className={activeTab === 'Students' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Students');setSidebarOpen(false);setError('');setNotice('');setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}}}><span className="submenu-icon">◎</span><span>Student Profile</span></button>
-            <button type="button" className={activeTab === 'Attendance' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('Attendance');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">✓</span><span>Attendance</span></button>
-            <button type="button" className={activeTab === 'History' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('History');setSidebarOpen(false);setError('');setNotice('');setHistoryStudent('');setHistoryDate('');setHistoryType('');setHistorySubject('');setHistoryPrevious('');setHistoryNew('');setHistoryPreviousDays('');setHistoryNewDays('');setHistoryPreviousTime('');setHistoryNewTime('');setEntryRemarks('');}}><span className="submenu-icon">＋</span><span>Add History</span></button>
+            <button type="button" className={activeTab === 'Students' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setShowForm(false);setActiveTab('Students');setSidebarOpen(false);setError('');setNotice('');setSelectedProfile(null);try{window.localStorage.removeItem('brac-kumon-selected-student')}catch{}}}><span className="submenu-icon">◎</span><span>Student Profile</span></button>
+            <button type="button" className={activeTab === 'Attendance' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setShowForm(false);setActiveTab('Attendance');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">✓</span><span>Attendance</span></button>
+            <button type="button" className={activeTab === 'History' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setShowForm(false);setActiveTab('History');setSidebarOpen(false);setError('');setNotice('');setHistoryStudent('');setHistoryDate('');setHistoryType('');setHistorySubject('');setHistoryPrevious('');setHistoryNew('');setHistoryPreviousDays('');setHistoryNewDays('');setHistoryPreviousTime('');setHistoryNewTime('');setEntryRemarks('');}}><span className="submenu-icon">＋</span><span>Add History</span></button>
           </div>}
         </div>
         {isAdmin && <div className="sidebar-menu-group">
@@ -932,11 +932,11 @@ function App() {
             <span className="sidebar-icon">৳</span><span>Payments</span><span className="sidebar-chevron">{paymentMenuOpen ? '⌃' : '⌄'}</span>
           </button>
           {paymentMenuOpen && <div className="sidebar-submenu">
-            <button type="button" className={activeTab === 'FeeTracker' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('FeeTracker');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">▤</span><span>Fee Tracker</span></button>
-            <button type="button" className={activeTab === 'RecordPayment' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setActiveTab('RecordPayment');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">＋</span><span>Record Payment</span></button>
+            <button type="button" className={activeTab === 'FeeTracker' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setShowForm(false);setActiveTab('FeeTracker');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">▤</span><span>Fee Tracker</span></button>
+            <button type="button" className={activeTab === 'RecordPayment' ? 'sidebar-sublink active' : 'sidebar-sublink'} onClick={() => {setShowForm(false);setActiveTab('RecordPayment');setSidebarOpen(false);setError('');setNotice('');}}><span className="submenu-icon">＋</span><span>Record Payment</span></button>
           </div>}
         </div>}
-        {isAdmin && <button type="button" className={activeTab === 'Employees' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setActiveTab('Employees');setSidebarOpen(false);setError('');setNotice('');}}>
+        {isAdmin && <button type="button" className={activeTab === 'Employees' ? 'sidebar-link active' : 'sidebar-link'} onClick={() => {setShowForm(false);setActiveTab('Employees');setSidebarOpen(false);setError('');setNotice('');}}>
           <span className="sidebar-icon">♙</span><span>Employees</span>
         </button>}
       </nav>
