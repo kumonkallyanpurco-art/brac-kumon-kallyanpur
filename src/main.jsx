@@ -191,7 +191,7 @@ function App() {
       rows.push({ date: dateKey, day: weekdayNames[date.getDay()], attendance: record?.attendance || 'Not marked', remarks: record?.remarks || '' });
     }
     return rows;
-  }, [selectedProfile, profileAttendanceMonth, profileAttendance, profileHistory]);
+  }, [selectedProfile, profileAttendanceMonth, profileAttendance, profileHistory, holidays]);
 
   const profileAttendanceCounts = useMemo(() => ({
     classes: profileAttendanceCalendar.length,
