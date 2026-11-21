@@ -1115,3 +1115,11 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
 .fee-summary-chevron{font-size:18px;line-height:1;transition:transform .18s ease}
 .fee-summary-toggle.is-open .fee-summary-chevron{transform:rotate(180deg)}
 .fee-tracker .fee-stats{margin:0 0 18px}
+
+
+/* Improve Fee Tracker table readability on desktop only */
+@media(min-width:761px){
+  .fee-tracker .table-wrap th{font-size:11px;padding:14px 13px;letter-spacing:.55px}
+  .fee-tracker .table-wrap td{font-size:13px;padding:14px 13px;line-height:1.45}
+  .fee-tracker .table-wrap td strong{font-size:13px}
+}
