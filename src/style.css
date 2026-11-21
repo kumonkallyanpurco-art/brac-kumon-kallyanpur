@@ -1123,3 +1123,14 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
   .fee-tracker .table-wrap td{font-size:13px;padding:14px 13px;line-height:1.45}
   .fee-tracker .table-wrap td strong{font-size:13px}
 }
+
+
+/* Consistent readable typography for every data table on desktop */
+@media(min-width:761px){
+  .table-wrap th,
+  .student-profile-card .table-wrap th{font-size:11px;padding:14px 13px;letter-spacing:.55px}
+  .table-wrap td,
+  .student-profile-card .table-wrap td{font-size:13px;padding:14px 13px;line-height:1.45}
+  .table-wrap td strong,
+  .student-profile-card .table-wrap td strong{font-size:13px}
+}
