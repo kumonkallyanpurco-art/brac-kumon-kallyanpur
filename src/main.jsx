@@ -72,7 +72,7 @@ function App() {
   const [profileLoading, setProfileLoading] = useState(false);
 
   const [activeTab, setActiveTabState] = useState(() => {
-    try { return window.localStorage.getItem('brac-kumon-active-tab') || 'Dashboard'; }
+    try { const saved = window.localStorage.getItem('brac-kumon-active-tab') || 'Dashboard'; return saved === 'Fees' ? 'FeeTracker' : saved; }
     catch { return 'Dashboard'; }
   });
   // Save the selected page immediately, so a quick browser refresh cannot lose it.
@@ -82,7 +82,7 @@ function App() {
   }
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentMenuOpen, setStudentMenuOpen] = useState(false);
-  const [paymentMenuOpen, setPaymentMenuOpen] = useState(false);
+  const [paymentMenuOpen, setPaymentMenuOpen] = useState(() => ['FeeTracker','RecordPayment'].includes(activeTab));
   useEffect(() => { try { window.localStorage.setItem('brac-kumon-profile-tab', profileTab); } catch { /* storage may be unavailable */ } }, [profileTab]);
   useEffect(() => {
     try { window.localStorage.setItem('brac-kumon-active-tab', activeTab); }
