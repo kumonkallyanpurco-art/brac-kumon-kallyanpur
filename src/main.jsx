@@ -975,7 +975,6 @@ function App() {
 
     {activeTab === 'Attendance' && <section className="content-card attendance-register">
       <div className="section-heading"><div><p className="eyebrow">CLASSROOM</p><h2>Student Attendance</h2><p className="muted">Select a class date and choose a student list.</p></div></div>
-      <>
       <div className="attendance-date-control">
         <label>Class Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
         <label className="attendance-search-field">Search Student<input type="search" placeholder="Search by name or ID..." value={attendanceSearch} onChange={e => setAttendanceSearch(e.target.value)} /></label>
