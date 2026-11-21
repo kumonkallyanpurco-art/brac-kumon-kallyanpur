@@ -25,6 +25,7 @@ const formatClassTime = value => {
   return `${displayHour}:${minuteText} ${suffix}`;
 };
 const money = value => new Intl.NumberFormat('en-BD', { maximumFractionDigits: 0 }).format(value || 0);
+const compareStudentIds = (a, b) => String(a.student_id || '').localeCompare(String(b.student_id || ''), undefined, { numeric: true, sensitivity: 'base' });
 
 function getMonthlyFeeDefault(student, month, year, subjectChanges) {
   const monthStart = new Date(Number(year), Number(month) - 1, 1);
@@ -221,13 +222,13 @@ function App() {
     }).map(student => {
       const record = attendanceRows.find(row => row.student_id === student.id && String(row.class_date).slice(0, 10) === attendanceDate);
       return { ...student, attendance: record?.attendance || '', attendance_remarks: record?.remarks || '' };
-    }).sort((a, b) => String(a.full_name || '').localeCompare(String(b.full_name || '')));
+    }).sort(compareStudentIds);
   }, [students, attendanceDate, attendanceRows, attendanceScheduleHistory, holidays]);
 
   const allAttendanceRoster = useMemo(() => students.map(student => {
     const record = attendanceRows.find(row => row.student_id === student.id && String(row.class_date).slice(0, 10) === attendanceDate);
     return { ...student, attendance: record?.attendance || '', attendance_remarks: record?.remarks || '' };
-  }).sort((a, b) => String(a.full_name || '').localeCompare(String(b.full_name || ''))), [students, attendanceDate, attendanceRows]);
+  }).sort(compareStudentIds), [students, attendanceDate, attendanceRows]);
 
   const newEnrollmentRoster = useMemo(() => allAttendanceRoster.filter(student =>
     student.class_start_date && String(student.class_start_date).slice(0, 10) === attendanceDate
@@ -308,7 +309,7 @@ function App() {
     const { data, error: studentsError } = await supabase
       .from('students')
       .select('id, student_id, full_name, subject, admission_date, class_start_date, billing_start_date, stop_billing_from, status_effective_date, class_days, class_time, current_class_days, current_class_time, current_status, enrollment_status, school_class, medium, remarks, no_fee, consent_from, znzn, starting_math_level, starting_english_level, current_math_level, current_english_level, exclude_from_subject_totals')
-      .order('full_name', { ascending: true })
+      .order('student_id', { ascending: true })
       .limit(1000);
     if (studentsError) setError('Could not load students: ' + studentsError.message);
     else setStudents(data || []);
@@ -674,8 +675,8 @@ function App() {
 
   const filteredStudents = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return students;
-    return students.filter(student => String(student.full_name || '').toLowerCase().includes(query));
+    const matching = query ? students.filter(student => String(student.full_name || '').toLowerCase().includes(query) || String(student.student_id || '').toLowerCase().includes(query)) : students;
+    return matching.slice().sort(compareStudentIds);
   }, [students, search]);
 
   const stats = useMemo(() => {
@@ -1218,7 +1219,7 @@ function App() {
           <label className="full-width">Select Student
             <select value={feeStudent} onChange={e=>{setFeeStudent(e.target.value);applyFeeDefaults(e.target.value);}} required>
               <option value="">Select student</option>
-              {students.slice().sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||''))).map(student=><option key={student.id} value={student.id}>{student.full_name} ({student.student_id})</option>)}
+              {students.slice().sort(compareStudentIds).map(student=><option key={student.id} value={student.id}>{student.full_name} ({student.student_id})</option>)}
             </select>
           </label>
           {feeStudent && <div className="record-payment-student-line full-width"><strong>{students.find(student=>student.id===feeStudent)?.full_name || ''}</strong><span>{students.find(student=>student.id===feeStudent)?.student_id || ''}</span><span>{students.find(student=>student.id===feeStudent)?.subject || ''}</span></div>}
