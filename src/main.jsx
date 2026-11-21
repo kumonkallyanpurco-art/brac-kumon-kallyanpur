@@ -92,6 +92,10 @@ function App() {
   const [attendanceSavingId, setAttendanceSavingId] = useState('');
   const [attendanceSearch, setAttendanceSearch] = useState('');
   const [attendanceView, setAttendanceView] = useState('All Students');
+  const [attendancePageTab, setAttendancePageTab] = useState('Mark Attendance');
+  const [attendanceHistoryRows, setAttendanceHistoryRows] = useState([]);
+  const [attendanceHistoryMonth, setAttendanceHistoryMonth] = useState(todayDhaka.slice(0, 7));
+  const [attendanceHistorySearch, setAttendanceHistorySearch] = useState('');
   const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
   const [historyStudent, setHistoryStudent] = useState('');
   const [historyDate, setHistoryDate] = useState('');
@@ -355,6 +359,22 @@ function App() {
   useEffect(() => {
     if (session && activeTab === 'Attendance') loadAttendance();
   }, [session, activeTab, loadAttendance]);
+
+  useEffect(() => {
+    if (!session || activeTab !== 'Attendance' || attendancePageTab !== 'Attendance History') return;
+    let cancelled = false;
+    (async () => {
+      const { data, error: historyError } = await supabase
+        .from('student_attendance')
+        .select('id, student_id, class_date, attendance, remarks')
+        .order('class_date', { ascending: false })
+        .limit(5000);
+      if (cancelled) return;
+      if (historyError) setError('Could not load attendance history: ' + historyError.message);
+      else setAttendanceHistoryRows(data || []);
+    })();
+    return () => { cancelled = true; };
+  }, [session, activeTab, attendancePageTab]);
 
   async function saveStudentAttendance(studentId, attendance) {
     if (!isAdmin || !studentId || !attendance) return;
@@ -932,7 +952,7 @@ function App() {
     {selectedProfile && activeTab === 'Students' && <section className="content-card student-profile-card">
       <div className="section-heading"><div><p className="eyebrow">STUDENT PROFILE</p><span className={'status-pill ' + (selectedProfile.current_status === 'Active' ? 'active' : 'discontinued')}>{selectedProfile.current_status || 'Inactive'}</span></div><button type="button" className="button-light compact search-student-button" onClick={() => { setSelectedProfile(null); setProfileHistory([]); setProfileAttendance([]); try { window.localStorage.removeItem('brac-kumon-selected-student'); } catch {} }}><span aria-hidden="true">⌕</span> Search Student</button></div>
       <div className="profile-tabs">
-        {['Overview','Class Schedule','Learning Progress','Achievement Test','Attendance'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}
+        {['Overview','Class Schedule','Learning Progress','Achievement Test'].map(tab => <button type="button" key={tab} className={profileTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab(tab)}>{tab}</button>)}
         <button type="button" className={profileTab === 'History' ? 'tab-button active' : 'tab-button'} onClick={() => setProfileTab('History')}>History</button>
       </div>
       {profileLoading && <div className="empty-state">Loading student history…</div>}
@@ -964,26 +984,16 @@ function App() {
       {!profileLoading && profileTab === 'History' && <div className="table-wrap"><table><thead><tr><th>Date</th><th>Event</th><th>Subject</th><th>Previous</th><th>New / Details</th><th>Remarks</th></tr></thead><tbody>
         {profileHistory.map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.event_type}</td><td>{x.subject || '—'}</td><td>{x.event_type === 'Time Change' ? formatClassTime(x.previous_class_time) : (x.previous_level || x.test_level || x.previous_class_days || x.previous_class_time || x.previous_status || '—')}</td><td>{x.event_type === 'Time Change' ? formatClassTime(x.new_class_time) : (x.new_level || x.test_result || x.new_class_days || x.new_class_time || x.new_status || x.discontinued_reason_or_transfer_centre || '—')}</td><td>{x.remarks || '—'}</td></tr>)}
       </tbody></table>{!profileHistory.length && <div className="empty-state">No history records found for this student.</div>}</div>}
-      {!profileLoading && profileTab === 'Attendance' && <>
-        <div className="fee-period">
-          <label>Month<input type="month" value={profileAttendanceMonth} onChange={e => setProfileAttendanceMonth(e.target.value)} /></label>
-        </div>
-        <div className="stat-grid fee-stats">
-          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon">▦</span><div><span>Classes</span><strong>{profileAttendanceCounts.classes}</strong></div></article>
-          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon present">✓</span><div><span>Present</span><strong>{profileAttendanceCounts.present}</strong></div></article>
-          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon absent">×</span><div><span>Absent</span><strong>{profileAttendanceCounts.absent}</strong></div></article>
-          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon leave">◷</span><div><span>Leave</span><strong>{profileAttendanceCounts.leave}</strong></div></article>
-          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon pending">○</span><div><span>Not marked yet</span><strong>{profileAttendanceCounts.notMarked}</strong></div></article>
-        </div>
-        <div className="table-wrap"><table><thead><tr><th>Date</th><th>Day</th><th>Class</th><th>Attendance</th><th>Holiday / Note</th></tr></thead><tbody>
-          {profileAttendanceCalendar.map(row => <tr key={row.date}><td>{row.date}</td><td>{row.day}</td><td>Class</td><td><span className={'status-pill ' + (row.attendance === 'Present' ? 'active' : row.attendance === 'Not marked' ? 'pending' : 'discontinued')}>{row.attendance}</span></td><td>{row.remarks || '—'}</td></tr>)}
-        </tbody></table>{!profileAttendanceCalendar.length && <div className="empty-state">No scheduled class dates for this month.</div>}</div>
-      </>}
+>}
 
     </section>}
 
     {activeTab === 'Attendance' && <section className="content-card attendance-register">
       <div className="section-heading"><div><p className="eyebrow">CLASSROOM</p><h2>Student Attendance</h2><p className="muted">Select a class date and choose a student list.</p></div></div>
+      <div className="profile-tabs attendance-page-tabs" role="tablist" aria-label="Attendance sections">
+        {['Mark Attendance', 'Attendance History'].map(tab => <button type="button" key={tab} role="tab" aria-selected={attendancePageTab === tab} className={attendancePageTab === tab ? 'tab-button active' : 'tab-button'} onClick={() => setAttendancePageTab(tab)}>{tab}</button>)}
+      </div>
+      {attendancePageTab === 'Mark Attendance' && <>
       <div className="attendance-date-control">
         <label>Class Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
         <label className="attendance-search-field">Search Student<input type="search" placeholder="Search by name or ID..." value={attendanceSearch} onChange={e => setAttendanceSearch(e.target.value)} /></label>
@@ -1005,7 +1015,21 @@ function App() {
         </div>)}
         {!visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).length && <div className="empty-state"><strong>{attendanceView === 'Today’s Class' ? 'No classes scheduled' : attendanceView === 'New Enrollment' ? 'No new enrollment for this class date' : 'No students found'}</strong><span>{attendanceView === 'New Enrollment' ? 'Students whose class start date matches the selected date will appear here.' : 'Try another search or select a different class date.'}</span></div>}
       </div>
-      <p className="attendance-register-note">Choose Present, Absent or Leave to save. To edit attendance, select a different status for the same student and date. Changes also appear in that student’s Profile → Attendance.</p>
+      <p className="attendance-register-note">Choose Present, Absent or Leave to save. To edit attendance, select a different status for the same student and date.</p>
+      </>}
+      {attendancePageTab === 'Attendance History' && <>
+        <div className="attendance-date-control">
+          <label>Month<input type="month" value={attendanceHistoryMonth} onChange={e => setAttendanceHistoryMonth(e.target.value)} /></label>
+          <label className="attendance-search-field">Search Student<input type="search" placeholder="Search by name or ID..." value={attendanceHistorySearch} onChange={e => setAttendanceHistorySearch(e.target.value)} /></label>
+        </div>
+        <div className="attendance-roster-heading"><h3>Attendance History</h3><span>{attendanceHistoryRows.filter(row => String(row.class_date).slice(0,7) === attendanceHistoryMonth && (() => { const student=students.find(s=>s.id===row.student_id); return `${student?.full_name || ''} ${student?.student_id || ''}`.toLowerCase().includes(attendanceHistorySearch.trim().toLowerCase()); })()).length} records</span></div>
+        <div className="table-wrap"><table><thead><tr><th>Date</th><th>Student ID</th><th>Student Name</th><th>Subject</th><th>Attendance</th><th>Remarks</th></tr></thead><tbody>
+          {attendanceHistoryRows.filter(row => String(row.class_date).slice(0,7) === attendanceHistoryMonth && (() => { const student=students.find(s=>s.id===row.student_id); return `${student?.full_name || ''} ${student?.student_id || ''}`.toLowerCase().includes(attendanceHistorySearch.trim().toLowerCase()); })()).map(row => { const student=students.find(s=>s.id===row.student_id); return <tr key={row.id}><td>{row.class_date}</td><td>{student?.student_id || '—'}</td><td>{student?.full_name || '—'}</td><td>{student?.subject || '—'}</td><td><span className={'status-pill ' + (row.attendance === 'Present' ? 'active' : row.attendance === 'Leave' ? 'pending' : 'discontinued')}>{row.attendance}</span></td><td>{row.remarks || '—'}</td></tr>; })}
+        </tbody></table>
+        {!attendanceHistoryRows.some(row => String(row.class_date).slice(0,7) === attendanceHistoryMonth && (() => { const student=students.find(s=>s.id===row.student_id); return `${student?.full_name || ''} ${student?.student_id || ''}`.toLowerCase().includes(attendanceHistorySearch.trim().toLowerCase()); })()) && <div className="empty-state">No attendance records found for this month.</div>}
+        </div>
+      </>}
+
     </section>}
 
     {activeTab === 'History' && <section className="content-card">
