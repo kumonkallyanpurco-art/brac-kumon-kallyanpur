@@ -96,6 +96,7 @@ function App() {
   const [attendanceHistoryRows, setAttendanceHistoryRows] = useState([]);
   const [attendanceHistoryMonth, setAttendanceHistoryMonth] = useState(todayDhaka.slice(0, 7));
   const [attendanceHistorySearch, setAttendanceHistorySearch] = useState('');
+  const [attendanceHistoryStudent, setAttendanceHistoryStudent] = useState(null);
   const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
   const [historyStudent, setHistoryStudent] = useState('');
   const [historyDate, setHistoryDate] = useState('');
@@ -647,6 +648,12 @@ function App() {
   const dashboardLeaveCount = dashboardEmployeeAttendance
     .filter(row => ['leave', 'on leave'].includes(String(row.attendance_status || '').toLowerCase())).length;
 
+  async function openAttendanceHistory(student) {
+    setAttendanceHistoryStudent(student.id);
+    setProfileAttendanceMonth(todayDhaka.slice(0, 7));
+    await openStudentProfile(student, true);
+  }
+
   async function openStudentProfile(student, preserveTab = false) {
     setSelectedProfile(student);
     try { window.localStorage.setItem('brac-kumon-selected-student', student.id); } catch { /* storage may be unavailable */ }
@@ -1001,6 +1008,39 @@ function App() {
       <div className="profile-tabs attendance-view-tabs" role="tablist" aria-label="Attendance student lists">
         {['All Students', 'Today’s Class', 'New Enrollment'].map(tab => <button type="button" key={tab} role="tab" aria-selected={attendanceView === tab} className={attendanceView === tab ? 'tab-button active' : 'tab-button'} onClick={() => setAttendanceView(tab)}>{tab}</button>)}
       </div>
+      {attendanceHistoryStudent ? (() => {
+        const monthStart = profileAttendanceMonth + '-01';
+        const [year, month] = profileAttendanceMonth.split('-').map(Number);
+        const firstWeekday = new Date(year, month - 1, 1).getDay();
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const cells = [...Array(firstWeekday).fill(null), ...Array.from({length: daysInMonth}, (_, i) => i + 1)];
+        return <div className="student-attendance-history">
+          <div className="attendance-history-student-heading">
+            <div><h3>{selectedProfile?.full_name || 'Student Attendance'}</h3><span>{selectedProfile?.student_id || ''} · {selectedProfile?.subject || ''}</span></div>
+            <button type="button" className="button-light compact" onClick={() => setAttendanceHistoryStudent(null)}>Back to All Students</button>
+          </div>
+          <div className="attendance-date-control"><label>Month<input type="month" value={profileAttendanceMonth} onChange={e => setProfileAttendanceMonth(e.target.value)} /></label></div>
+          <div className="attendance-roster-summary">
+            <div><span>Total Classes</span><strong>{profileAttendanceCounts.classes}</strong></div>
+            <div><span>Present</span><strong>{profileAttendanceCounts.present}</strong></div>
+            <div><span>Absent</span><strong>{profileAttendanceCounts.absent}</strong></div>
+            <div><span>Leave</span><strong>{profileAttendanceCounts.leave}</strong></div>
+            <div><span>Not Marked</span><strong>{profileAttendanceCounts.notMarked}</strong></div>
+          </div>
+          <div className="student-attendance-calendar">
+            {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day => <div className="attendance-calendar-weekday" key={day}>{day}</div>)}
+            {cells.map((day, index) => {
+              if (!day) return <div className="attendance-calendar-empty" key={'empty-'+index}/>;
+              const date = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+              const record = profileAttendanceCalendar.find(item => item.date === date);
+              const status = record?.attendance || 'Not scheduled';
+              return <div className={'attendance-calendar-day ' + status.toLowerCase().replace(/\s+/g,'-')} key={date}>
+                <strong>{day}</strong><span>{record ? status : '—'}</span>
+              </div>;
+            })}
+          </div>
+        </div>;
+      })() : <>
       <div className="attendance-roster-heading"><h3>{attendanceView}</h3><span>{visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).length} students</span></div>
       <div className="attendance-roster-list">
         {visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).map((student, index) => <div className="attendance-roster-row" key={student.id}>
@@ -1011,11 +1051,13 @@ function App() {
               <option value="">Mark attendance</option><option value="Present">Present</option><option value="Absent">Absent</option><option value="Leave">Leave</option>
             </select> : <span className={'status-pill ' + (student.attendance === 'Present' ? 'active' : student.attendance ? 'discontinued' : 'pending')}>{student.attendance || 'Not marked'}</span>}
             {attendanceSavingId === student.id && <small className="attendance-saving-label">Saving…</small>}
+            <button type="button" className="attendance-history-button" onClick={() => openAttendanceHistory(student)}>History</button>
           </div>
         </div>)}
         {!visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).length && <div className="empty-state"><strong>{attendanceView === 'Today’s Class' ? 'No classes scheduled' : attendanceView === 'New Enrollment' ? 'No new enrollment for this class date' : 'No students found'}</strong><span>{attendanceView === 'New Enrollment' ? 'Students whose class start date matches the selected date will appear here.' : 'Try another search or select a different class date.'}</span></div>}
       </div>
       <p className="attendance-register-note">Choose Present, Absent or Leave to save. To edit attendance, select a different status for the same student and date.</p>
+      </>}
       </>}
       {attendancePageTab === 'Attendance History' && <>
         <div className="attendance-date-control">
