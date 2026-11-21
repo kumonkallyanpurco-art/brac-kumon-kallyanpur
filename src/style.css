@@ -1179,3 +1179,23 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
 .record-payment-page .record-payment-balance{display:flex;flex-wrap:wrap;gap:10px 24px;margin-top:14px;padding:12px 13px;background:#f7faf8;border:1px solid #e6ece7;border-radius:10px;color:#53715e;font-size:12px}
 .record-payment-page .record-payment-balance strong{color:#20352b}
 @media(max-width:760px){.record-payment-page{padding:15px 0}.record-payment-page .record-payment-modal{padding:20px;max-height:none}}
+
+
+/* Add Student uses the same polished form layout as Record Payment */
+.add-student-page{padding:24px 0 34px}
+.add-student-page .add-student-modal{width:min(100%,900px);max-height:none;overflow:visible;margin:0;border:1px solid #edf1ee}
+.add-student-page .modal-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.add-student-page .modal-heading h2{margin:0;color:#193d2c;font:800 24px Manrope,sans-serif}
+.add-student-page .modal-heading .muted{margin:7px 0 0}
+.add-student-page .close-button{flex:0 0 34px;width:34px;height:34px;border:1px solid #e3ebe5;border-radius:9px;background:#fff;color:#557060;font-size:20px;line-height:1}
+.add-student-page .form-grid label{display:block;margin:18px 0 0;gap:0;color:#405449;font-size:12px;font-weight:700}
+.add-student-page .form-grid input:not([type="checkbox"]),
+.add-student-page .form-grid select,
+.add-student-page .form-grid textarea{display:block;width:100%;margin-top:7px;min-height:0;padding:12px 13px;border:1px solid #dce6df;border-radius:10px;background:#fff;color:#20352b;outline:none;font:inherit;font-size:12px;box-sizing:border-box}
+.add-student-page .form-grid input:focus,
+.add-student-page .form-grid select:focus,
+.add-student-page .form-grid textarea:focus{border-color:#4a8965;box-shadow:0 0 0 3px #4a89651a}
+.add-student-page .form-grid input[type="checkbox"]{display:inline-block;width:16px;height:16px;margin:0 0 0 8px;vertical-align:middle;accent-color:#174b36}
+.add-student-page .form-grid label:has(input[type="checkbox"]){display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:42px;padding:10px 12px;border:1px solid #e6ece7;border-radius:10px;background:#f8faf8}
+.add-student-page .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid #edf1ee}
+@media(max-width:760px){.add-student-page{padding:15px 0 24px}.add-student-page .add-student-modal{padding:20px;max-height:none}.add-student-page .modal-heading h2{font-size:21px}}
