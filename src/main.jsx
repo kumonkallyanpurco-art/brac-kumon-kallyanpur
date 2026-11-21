@@ -6,7 +6,7 @@ import './style.css';
 
 const emptyStudent = {
   student_id: '', full_name: '', subject: 'Math', admission_date: '',
-  class_start_date: '', stop_billing_from: '', class_days: 'Saturday & Tuesday', class_time: '11:00',
+  class_start_date: '', billing_start_date: '', stop_billing_from: '', class_days: 'Saturday & Tuesday', class_time: '11:00',
   current_status: 'Active', no_fee: false, consent_from: 'No', znzn: 'No', starting_math_level: '', starting_english_level: '', exclude_from_subject_totals: false, status_effective_date: '', school_class: '', medium: '', remarks: ''
 };
 const APP_TIME_ZONE = 'Asia/Dhaka';
@@ -31,7 +31,7 @@ function getMonthlyFeeDefault(student, month, year, subjectChanges) {
   const nextMonth = new Date(Number(year), Number(month), 1);
   const asDate = value => value ? new Date(String(value).slice(0, 10) + 'T00:00:00') : null;
   if (student.no_fee) return { plan: 'Exempt', amount: 0, subject: student.subject };
-  const startDate = asDate(student.class_start_date);
+  const startDate = asDate(student.billing_start_date || student.class_start_date);
   const stopDate = asDate(student.stop_billing_from);
   if (startDate && startDate >= nextMonth) return { plan: 'No Fee', amount: 0, subject: student.subject };
   if (stopDate) {
@@ -125,6 +125,8 @@ function App() {
   const [historyNewTime, setHistoryNewTime] = useState('');
   const [entryRemarks, setEntryRemarks] = useState('');
   const [feeRows, setFeeRows] = useState([]);
+  const [noIdStudents, setNoIdStudents] = useState([]);
+  const [holidays, setHolidays] = useState([]);
   const [feeAssessments, setFeeAssessments] = useState([]);
   const [subjectChanges, setSubjectChanges] = useState([]);
   const [feeStudent, setFeeStudent] = useState('');
@@ -184,7 +186,7 @@ function App() {
       const scheduled = classDays.toLowerCase().includes(weekdayNames[date.getDay()].toLowerCase());
       const statusEvent = statusEvents.filter(event => String(event.event_date).slice(0, 10) <= dateKey).at(-1);
       const status = statusEvent?.new_status || selectedProfile.current_status || 'Active';
-      if (!scheduled || ['Discontinued', 'Inactive'].includes(status)) continue;
+      if (!scheduled || ['Discontinued', 'Inactive'].includes(status) || holidays.some(holiday => String(holiday.holiday_date).slice(0, 10) === dateKey)) continue;
       const record = attendanceByDate.get(dateKey);
       rows.push({ date: dateKey, day: weekdayNames[date.getDay()], attendance: record?.attendance || 'Not marked', remarks: record?.remarks || '' });
     }
@@ -200,7 +202,7 @@ function App() {
   }), [profileAttendanceCalendar]);
 
   const attendanceRoster = useMemo(() => {
-    if (!attendanceDate) return [];
+    if (!attendanceDate || holidays.some(holiday => String(holiday.holiday_date).slice(0, 10) === attendanceDate)) return [];
     const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const weekday = weekdayNames[new Date(`${attendanceDate}T00:00:00`).getDay()];
     return students.filter(student => {
@@ -220,7 +222,7 @@ function App() {
       const record = attendanceRows.find(row => row.student_id === student.id && String(row.class_date).slice(0, 10) === attendanceDate);
       return { ...student, attendance: record?.attendance || '', attendance_remarks: record?.remarks || '' };
     }).sort((a, b) => String(a.full_name || '').localeCompare(String(b.full_name || '')));
-  }, [students, attendanceDate, attendanceRows, attendanceScheduleHistory]);
+  }, [students, attendanceDate, attendanceRows, attendanceScheduleHistory, holidays]);
 
   const allAttendanceRoster = useMemo(() => students.map(student => {
     const record = attendanceRows.find(row => row.student_id === student.id && String(row.class_date).slice(0, 10) === attendanceDate);
@@ -305,7 +307,7 @@ function App() {
     }
     const { data, error: studentsError } = await supabase
       .from('students')
-      .select('id, student_id, full_name, subject, admission_date, class_start_date, stop_billing_from, status_effective_date, class_days, class_time, current_class_days, current_class_time, current_status, enrollment_status, school_class, medium, remarks, no_fee, consent_from, znzn, starting_math_level, starting_english_level, exclude_from_subject_totals')
+      .select('id, student_id, full_name, subject, admission_date, class_start_date, billing_start_date, stop_billing_from, status_effective_date, class_days, class_time, current_class_days, current_class_time, current_status, enrollment_status, school_class, medium, remarks, no_fee, consent_from, znzn, starting_math_level, starting_english_level, current_math_level, current_english_level, exclude_from_subject_totals')
       .order('full_name', { ascending: true })
       .limit(1000);
     if (studentsError) setError('Could not load students: ' + studentsError.message);
@@ -314,6 +316,13 @@ function App() {
   }, [session]);
 
   useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    if (!session || !supabase) return;
+    supabase.from('holidays').select('id, holiday_date, holiday_name').order('holiday_date').then(({data, error: holidayError}) => {
+      if (holidayError) setError('Could not load holidays: ' + holidayError.message);
+      else setHolidays(data || []);
+    });
+  }, [session]);
 
   const loadDashboardData = useCallback(async () => {
     if (!session || !isAdmin) return;
@@ -482,15 +491,16 @@ function App() {
 
   const loadFees = useCallback(async () => {
     if (!isAdmin) return;
-    const [paymentsResult, assessmentsResult, changesResult] = await Promise.all([
+    const [paymentsResult, assessmentsResult, changesResult, noIdResult] = await Promise.all([
       supabase.from('fee_payments')
-        .select('id, student_id, payment_date, fee_type, fee_for_month, fee_for_year, amount, method, receipt_no, remarks, students(student_id, full_name, subject, no_fee)')
+        .select('id, student_id, payment_date, fee_type, fee_for_month, fee_for_year, enrollment_for_month, enrollment_for_year, amount, method, receipt_no, remarks, students(student_id, full_name, subject, no_fee)')
         .order('payment_date', { ascending: false }).limit(3000),
       supabase.from('monthly_fee_assessments')
         .select('id, student_id, fee_for_month, fee_for_year, fee_plan, expected_amount, subject_snapshot, remarks'),
       supabase.from('subject_changes')
         .select('id, student_id, change_date, charged_from, previous_subject, new_subject')
-        .order('charged_from', { ascending: false })
+        .order('charged_from', { ascending: false }),
+      supabase.from('no_id_students').select('id, full_name, subject, payment_date, amount_paid, class_start_date, class_days, class_time, remarks').order('payment_date', { ascending: false })
     ]);
     if (paymentsResult.error) setError('Could not load fee payments: ' + paymentsResult.error.message);
     else setFeeRows(paymentsResult.data || []);
@@ -498,6 +508,8 @@ function App() {
     else setFeeAssessments(assessmentsResult.data || []);
     if (changesResult.error) setError('Could not load subject changes: ' + changesResult.error.message);
     else setSubjectChanges(changesResult.data || []);
+    if (noIdResult.error) setError('Could not load students without ID: ' + noIdResult.error.message);
+    else setNoIdStudents(noIdResult.data || []);
   }, [isAdmin]);
 
   useEffect(() => {
@@ -587,6 +599,8 @@ function App() {
       student_id: feeStudent, payment_date: feeDate, fee_type: feeType,
       fee_for_month: feeType === 'Monthly Fee' ? Number(feeMonth) : null,
       fee_for_year: feeType === 'Monthly Fee' ? Number(feeYear) : null,
+      enrollment_for_month: feeType === 'Enrollment Fee' ? Number(feeMonth) : null,
+      enrollment_for_year: feeType === 'Enrollment Fee' ? Number(feeYear) : null,
       amount: Number(feeAmount), method: feeMethod || null,
       receipt_no: feeReceipt.trim() || null,
       remarks: [feeType === 'Monthly Fee' ? 'Fee plan: ' + feePlan : 'Enrollment fee', feeRemarks.trim()].filter(Boolean).join(' | ') || null,
@@ -627,7 +641,8 @@ function App() {
   const trackerMonthStart = new Date(Number(feeYear), Number(feeMonth) - 1, 1);
   const trackerNextMonth = new Date(Number(feeYear), Number(feeMonth), 1);
   const trackerRows = students.map(student => {
-    const start = student.class_start_date ? new Date(String(student.class_start_date).slice(0,10) + 'T00:00:00') : null;
+    const billingStart = student.billing_start_date || student.class_start_date;
+    const start = billingStart ? new Date(String(billingStart).slice(0,10) + 'T00:00:00') : null;
     const stop = student.stop_billing_from ? new Date(String(student.stop_billing_from).slice(0,10) + 'T00:00:00') : null;
     const stopMonth = stop ? new Date(stop.getFullYear(), stop.getMonth(), 1) : null;
     const billed = !student.no_fee &&
@@ -643,7 +658,7 @@ function App() {
     return {student,subject,feeType:billed?(half?'Half':'Full'):'—',due,paid,balance,status,enrollmentPaid,billed};
   });
   const trackerBilled = trackerRows.filter(row=>row.billed);
-  const trackerEnrollmentReceived = feeRows.filter(row=>row.fee_type==='Enrollment Fee' && row.fee_for_month===Number(feeMonth) && row.fee_for_year===Number(feeYear)).reduce((sum,row)=>sum+Number(row.amount||0),0);
+  const trackerEnrollmentReceived = feeRows.filter(row=>row.fee_type==='Enrollment Fee' && row.enrollment_for_month===Number(feeMonth) && row.enrollment_for_year===Number(feeYear)).reduce((sum,row)=>sum+Number(row.amount||0),0);
   const trackerCashReceived = feeRows.filter(row=>{const d=row.payment_date?new Date(String(row.payment_date).slice(0,10)+'T00:00:00'):null;return d && d>=trackerMonthStart && d<trackerNextMonth;}).reduce((sum,row)=>sum+Number(row.amount||0),0);
   const trackerStats = {
     billed: trackerBilled.length,
@@ -787,6 +802,9 @@ function App() {
         subject: form.subject,
         admission_date: form.admission_date || null,
         class_start_date: form.class_start_date || null,
+        billing_start_date: form.billing_start_date || form.class_start_date || null,
+        current_math_level: form.current_math_level || null,
+        current_english_level: form.current_english_level || null,
         stop_billing_from: form.stop_billing_from || null,
         class_days: form.class_days,
         current_class_days: form.class_days,
@@ -1044,9 +1062,9 @@ function App() {
       </div>}
       {!profileLoading && profileTab === 'Learning Progress' && <div className="profile-detail-grid">
         <div className="profile-detail"><small>Math Starting Level</small><strong>{selectedProfile.starting_math_level || '—'}</strong></div>
-        <div className="profile-detail"><small>Math Current Level</small><strong>{[...profileHistory].filter(x => x.event_type === 'Level Change' && x.subject === 'Math' && x.new_level).sort((a,b)=>String(b.event_date).localeCompare(String(a.event_date)))[0]?.new_level || selectedProfile.starting_math_level || '—'}</strong></div>
+        <div className="profile-detail"><small>Math Current Level</small><strong>{[...profileHistory].filter(x => x.event_type === 'Level Change' && x.subject === 'Math' && x.new_level).sort((a,b)=>String(b.event_date).localeCompare(String(a.event_date)))[0]?.new_level || selectedProfile.current_math_level || selectedProfile.starting_math_level || '—'}</strong></div>
         <div className="profile-detail"><small>English Starting Level</small><strong>{selectedProfile.starting_english_level || '—'}</strong></div>
-        <div className="profile-detail"><small>English Current Level</small><strong>{[...profileHistory].filter(x => x.event_type === 'Level Change' && x.subject === 'English' && x.new_level).sort((a,b)=>String(b.event_date).localeCompare(String(a.event_date)))[0]?.new_level || selectedProfile.starting_english_level || '—'}</strong></div>
+        <div className="profile-detail"><small>English Current Level</small><strong>{[...profileHistory].filter(x => x.event_type === 'Level Change' && x.subject === 'English' && x.new_level).sort((a,b)=>String(b.event_date).localeCompare(String(a.event_date)))[0]?.new_level || selectedProfile.current_english_level || selectedProfile.starting_english_level || '—'}</strong></div>
         <div className="profile-detail"><small>Math Level Changes</small><strong>{profileHistory.filter(x => x.event_type === 'Level Change' && x.subject === 'Math').length}</strong></div>
         <div className="profile-detail"><small>English Level Changes</small><strong>{profileHistory.filter(x => x.event_type === 'Level Change' && x.subject === 'English').length}</strong></div>
       </div>}
@@ -1188,6 +1206,10 @@ function App() {
       <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student Name</th><th>Subject (This Month)</th><th>Fee Type</th><th>Fee Due</th><th>Paid</th><th>Balance</th><th>Status</th><th>Enrollment Fee Paid (To Date)</th></tr></thead><tbody>
         {trackerRows.map(({student,subject,feeType,due,paid,balance,status,enrollmentPaid})=><tr key={student.id}><td>{student.student_id}</td><td>{student.full_name}</td><td>{subject}</td><td>{feeType}</td><td>৳{money(due)}</td><td>৳{money(paid)}</td><td>৳{money(balance)}</td><td><span className={'status-pill '+(status==='Paid'?'active':status==='Partial'?'pending':status==='Unpaid'?'discontinued':'')}>{status}</span></td><td>৳{money(enrollmentPaid)}</td></tr>)}
       </tbody></table>{!trackerRows.length && <div className="empty-state">No student records found.</div>}</div>
+      <div className="section-heading no-id-section-heading"><div><p className="eyebrow">ENROLMENT</p><h2>Students Without ID</h2><p className="muted">These records are kept separate and are not included in fee totals.</p></div><strong>{noIdStudents.length} students</strong></div>
+      <div className="table-wrap"><table><thead><tr><th>Student Name</th><th>Subject</th><th>Payment Date</th><th>Enrollment Fee Received</th><th>Class Start Date</th><th>Class Days</th><th>Class Time</th><th>Remarks</th></tr></thead><tbody>
+        {noIdStudents.map(student=><tr key={student.id}><td><strong>{student.full_name}</strong></td><td>{student.subject}</td><td>{student.payment_date || '—'}</td><td>৳{money(student.amount_paid)}</td><td>{student.class_start_date || '—'}</td><td>{student.class_days || '—'}</td><td>{student.class_time ? formatClassTime(student.class_time) : '—'}</td><td>{student.remarks || '—'}</td></tr>)}
+      </tbody></table>{!noIdStudents.length && <div className="empty-state">No students waiting for ID.</div>}</div>
     </section>}
     {activeTab === 'RecordPayment' && isAdmin && <section className="record-payment-page">
       <form className="student-modal record-payment-modal" onSubmit={saveFee}>
@@ -1210,7 +1232,11 @@ function App() {
             <label>Amount Received (৳)<input type="number" value={feeAmount} readOnly min="1" /></label>
             <div className="record-payment-balance full-width"><span>Already Paid: <strong>৳{money(feeStudent ? feePaidByStudent[feeStudent] || 0 : 0)}</strong></span><span>Remaining: <strong>৳{money(Math.max(0,Number(feeExpected||0)-(feeStudent ? feePaidByStudent[feeStudent]||0 : 0)))}</strong></span></div>
           </>}
-          {feeType==='Enrollment Fee' && <label>Amount Received (৳)<input type="number" value={feeAmount} onChange={e=>setFeeAmount(e.target.value)} min="1" step="1" required /></label>}
+          {feeType==='Enrollment Fee' && <>
+            <label>Enrollment Month<select value={feeMonth} onChange={e=>setFeeMonth(e.target.value)}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label>
+            <label>Enrollment Year<select value={feeYear} onChange={e=>setFeeYear(e.target.value)}>{Array.from({length:8},(_,i)=>2026+i).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
+            <label>Amount Received (৳)<input type="number" value={feeAmount} onChange={e=>setFeeAmount(e.target.value)} min="1" step="1" required /></label>
+          </>}
           <label>Payment Method<select value={feeMethod} onChange={e=>setFeeMethod(e.target.value)}><option>Cash</option><option>bKash</option><option>Bank Transfer</option><option>Card</option><option>Other</option></select></label>
           <label>Receipt Number<input value={feeReceipt} onChange={e=>setFeeReceipt(e.target.value)} placeholder="Optional" /></label>
           <label className="full-width">Remarks<textarea rows="3" value={feeRemarks} onChange={e=>setFeeRemarks(e.target.value)} placeholder="Optional" /></label>
@@ -1234,6 +1260,7 @@ function App() {
         <label>Not counted in subject totals<input type="checkbox" checked={!!form.exclude_from_subject_totals} onChange={e => setForm({...form, exclude_from_subject_totals:e.target.checked})} /></label>
         <label>Admission date<input type="date" value={form.admission_date || ''} onChange={e => setForm({...form, admission_date:e.target.value})} /></label>
         <label>Class start date<input type="date" value={form.class_start_date || ''} onChange={e => setForm({...form, class_start_date:e.target.value})} /></label>
+        <label>Billing start date<input type="date" value={form.billing_start_date || ''} onChange={e => setForm({...form, billing_start_date:e.target.value})} /></label>
         <label>Stop billing from<input type="date" value={form.stop_billing_from || ''} onChange={e => setForm({...form, stop_billing_from:e.target.value})} /></label>
         <label>Status effective date<input type="date" value={form.status_effective_date || ''} onChange={e => setForm({...form, status_effective_date:e.target.value})} /></label>
         <label>Class days<select value={form.class_days} onChange={e => setForm({...form, class_days:e.target.value})}><option>Saturday & Tuesday</option><option>Sunday & Wednesday</option></select></label>
