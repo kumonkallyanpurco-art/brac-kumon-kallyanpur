@@ -1065,3 +1065,38 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
 .attendance-page-tabs{display:flex;flex-wrap:nowrap;gap:8px}
 .attendance-page-tabs .tab-button{flex:1 1 0;min-width:0}
 @media(max-width:520px){.attendance-page-tabs .tab-button{padding:9px 8px;font-size:12px}}
+
+
+/* Per-student attendance history calendar */
+.attendance-roster-status{flex-basis:auto;gap:8px}
+.attendance-history-button{
+  min-height:38px;padding:8px 13px;border:1px solid #cfe5ef;border-radius:9px;
+  background:#e8f7fd;color:#087eae;font:inherit;font-size:12px;font-weight:750;cursor:pointer;
+}
+.attendance-history-button:hover{background:#d8f1fb}
+.student-attendance-history{margin-top:18px}
+.attendance-history-student-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 12px}
+.attendance-history-student-heading h3{margin:0 0 4px;color:#123b5d;font-size:17px}
+.attendance-history-student-heading span{color:#78909d;font-size:12px}
+.student-attendance-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin:12px 0 18px}
+.attendance-calendar-weekday{padding:9px 4px;text-align:center;color:#66808e;font-size:11px;font-weight:800}
+.attendance-calendar-empty{min-height:72px}
+.attendance-calendar-day{display:flex;flex-direction:column;gap:9px;min-height:72px;padding:10px;border:1px solid #e0ebf1;border-radius:10px;background:#fff}
+.attendance-calendar-day strong{font-size:13px;color:#123b5d}
+.attendance-calendar-day span{font-size:10px;font-weight:750;color:#718a98}
+.attendance-calendar-day.present{background:#effaf4;border-color:#ccebd8}
+.attendance-calendar-day.present span{color:#20834c}
+.attendance-calendar-day.absent{background:#fff2f1;border-color:#f4d5d1}
+.attendance-calendar-day.absent span{color:#c34d45}
+.attendance-calendar-day.leave{background:#fff9e9;border-color:#f1e3b8}
+.attendance-calendar-day.leave span{color:#9b7417}
+.attendance-calendar-day.not-marked{background:#f7fafc}
+@media(max-width:640px){
+  .attendance-roster-status{flex:0 0 auto;flex-wrap:wrap}
+  .attendance-history-button{padding:8px 10px}
+  .student-attendance-calendar{gap:4px}
+  .attendance-calendar-day{min-height:60px;padding:7px 5px;gap:7px}
+  .attendance-calendar-day span{font-size:9px}
+  .attendance-calendar-empty{min-height:60px}
+  .attendance-history-student-heading{align-items:flex-start;flex-direction:column}
+}
