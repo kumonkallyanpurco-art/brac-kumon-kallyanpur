@@ -1329,3 +1329,72 @@ body,.app-layout.workspace{background:#f5f7f5;color:#20352b}
   .app-main .stat-card strong{font-size:20px}
   .app-main .tab-button{padding:9px 11px;font-size:11px}
 }
+
+
+/* Kumon-inspired site-wide sizing and brand palette */
+:root{
+  --kumon-blue:#0066a4;
+  --kumon-blue-dark:#004f82;
+  --kumon-navy:#003f68;
+  --kumon-sky:#eaf4fa;
+  --kumon-orange:#f28c28;
+  --kumon-text:#263746;
+  --kumon-muted:#71808c;
+  --kumon-border:#dce6ed;
+  --line:#dce6ed;
+  --border:#dce6ed;
+  --surface:#fff;
+  --muted:#71808c;
+}
+body,.app-layout.workspace{background:#f4f7f9;color:#263746}
+.app-sidebar{background:#004f82}
+.sidebar-link.active{color:#005b91}
+.app-main .page-heading h1,
+.app-main .section-heading h2,
+.app-main .dashboard-section-title h2,
+.app-main .modal-heading h2{color:#003f68}
+.app-main .eyebrow{color:#e17b1d}
+.app-main .tab-button.active,
+.app-main .primary-button{background:#0066a4;border-color:#0066a4;color:#fff}
+.app-main .tab-button.active:hover,
+.app-main .primary-button:hover{background:#004f82;border-color:#004f82}
+.app-main .tab-button:hover:not(.active),
+.app-main .button-light:hover{background:#eaf4fa;border-color:#b8d2e2}
+.app-main .text-button{color:#0066a4}
+.app-main .dashboard-clock-card{background:linear-gradient(115deg,#004f82,#1682b8)}
+.app-main .dashboard-date-tag,.app-main .dashboard-clock-bar{background:#eaf4fa;border-color:#d2e5f0;color:#31566e}
+.app-main .dashboard-clock-bar .dashboard-clock{color:#0066a4}
+.app-main input:not([type="checkbox"]):not([type="radio"]),
+.app-main select,.app-main textarea{border-color:#d5e1e9;border-radius:9px;color:#263746}
+.app-main input:focus,.app-main select:focus,.app-main textarea:focus{border-color:#1682b8;box-shadow:0 0 0 3px #1682b81a}
+.app-main .tab-button{border-color:#d5e1e9;color:#405665}
+.app-main .content-card,.app-main .stat-card,.app-main .profile-detail{border-color:#dce6ed}
+.app-main th{background:#eef4f8;color:#627887}
+.app-main .table-wrap{border-color:#dce6ed}
+.app-main .status-pill{background:#e8f3fa;color:#0066a4}
+.app-main .attendance-history-button,.app-main .fee-summary-toggle{background:#eaf4fa;border-color:#d2e5f0;color:#31566e}
+.app-main .live-indicator{background:#e8f3fa;color:#0066a4}
+.app-main .live-indicator:before{background:#1682b8}
+
+/* Keep the same generous form width and field sizing as Add Student */
+.record-payment-page .record-payment-modal{width:min(100%,900px)}
+.add-student-page .add-student-modal{width:min(100%,900px)}
+.record-payment-page .form-grid,
+.add-student-page .form-grid{gap:0 22px}
+.record-payment-page .form-grid label,
+.add-student-page .form-grid label{font-size:12px;line-height:1.45}
+.record-payment-page .form-grid input:not([type="checkbox"]),
+.record-payment-page .form-grid select,
+.record-payment-page .form-grid textarea,
+.add-student-page .form-grid input:not([type="checkbox"]),
+.add-student-page .form-grid select,
+.add-student-page .form-grid textarea{min-height:44px;padding:12px 13px;font-size:12px}
+.record-payment-page .modal-actions,
+.add-student-page .modal-actions{gap:10px}
+.record-payment-page .primary-button,
+.add-student-page .primary-button,
+.record-payment-page .button-light,
+.add-student-page .button-light{min-height:42px;padding:11px 17px;font-size:12px}
+@media(max-width:760px){
+ .record-payment-page .record-payment-modal,.add-student-page .add-student-modal{width:100%}
+}
