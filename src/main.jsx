@@ -1211,8 +1211,8 @@ function App() {
         <div className="modal-actions"><button type="button" className="button-light" onClick={()=>{setFeeStudent('');setFeeAmount('');setFeeExpected('');setFeeRemarks('');setFeeReceipt('');}}>Clear</button><button type="submit" className="primary-button" disabled={saving || !feeStudent || !(Number(feeAmount)>0) || (feeType==='Monthly Fee' && !(Number(feeExpected)>0))}>{saving?'Saving…':'Save Payment'}</button></div>
       </form>
     </section>}
-    {showForm && isAdmin && <div className="modal-backdrop" role="presentation"><form className="student-modal" onSubmit={saveStudent}>
-      <div className="modal-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2>{editingId ? 'Edit student' : 'Add student'}</h2></div><button type="button" className="close-button" onClick={() => {setShowForm(false);if(activeTab === 'AddStudent') setActiveTab('Students');}}>×</button></div>
+    {showForm && isAdmin && <section className="record-payment-page add-student-page"><form className="student-modal record-payment-modal add-student-modal" onSubmit={saveStudent}>
+      <div className="modal-heading"><div><p className="eyebrow">STUDENT RECORD</p><h2>{editingId ? 'Edit student' : 'Add student'}</h2><p className="muted">Enter student details and class information below.</p></div><button type="button" className="close-button" onClick={() => {setShowForm(false);if(activeTab === 'AddStudent') setActiveTab('Students');}}>×</button></div>
       <div className="form-grid">
         <label>Student ID<input value={form.student_id} onChange={e => setForm({...form, student_id:e.target.value})} required disabled={!!editingId} /></label>
         <label>Student name<input value={form.full_name} onChange={e => setForm({...form, full_name:e.target.value})} required /></label>
@@ -1236,7 +1236,7 @@ function App() {
       </div>
       {error && <p className="error-message">{error}</p>}
       <div className="modal-actions"><button type="button" className="button-light" onClick={() => {setShowForm(false);if(activeTab === 'AddStudent') setActiveTab('Students');}}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Saving…' : 'Save student'}</button></div>
-    </form></div>}
+    </form></section>}
     <footer className="app-footer">BRAC Kumon Kallyanpur Center <span>·</span> Secure online workspace</footer>
     </div>
   </main>;
