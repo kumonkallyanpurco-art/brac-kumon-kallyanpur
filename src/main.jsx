@@ -1004,17 +1004,13 @@ function App() {
             <div><span>Leave</span><strong>{profileAttendanceCounts.leave}</strong></div>
             <div><span>Not Marked</span><strong>{profileAttendanceCounts.notMarked}</strong></div>
           </div>
-          <div className="student-attendance-calendar">
-            {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day => <div className="attendance-calendar-weekday" key={day}>{day}</div>)}
-            {cells.map((day, index) => {
-              if (!day) return <div className="attendance-calendar-empty" key={'empty-'+index}/>;
-              const date = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-              const record = profileAttendanceCalendar.find(item => item.date === date);
-              const status = record?.attendance || 'Not scheduled';
-              return <div className={'attendance-calendar-day ' + status.toLowerCase().replace(/\s+/g,'-')} key={date}>
-                <strong>{day}</strong><span>{record ? status : '—'}</span>
-              </div>;
-            })}
+          <div className="student-attendance-calendar scheduled-class-days">
+            {profileAttendanceCalendar.map(record => <div className={'attendance-calendar-day ' + record.attendance.toLowerCase().replace(/\\s+/g,'-')} key={record.date}>
+              <strong>{new Date(record.date + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</strong>
+              <span>{record.day}</span>
+              <span>{record.attendance}</span>
+            </div>)}
+            {!profileAttendanceCalendar.length && <div className="empty-state"><strong>No scheduled classes</strong><span>No class days are scheduled for this student in the selected month.</span></div>}
           </div>
         </div>;
       })() : <>
