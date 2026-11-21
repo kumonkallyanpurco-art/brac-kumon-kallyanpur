@@ -1461,3 +1461,11 @@ body,.app-layout.workspace{background:#f4f7f9;color:#263746}
   opacity:1!important;
   font-weight:800!important;
 }
+
+
+/* Admin-only permanent student deletion */
+.student-profile-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}
+.app-main .danger-button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:9px 13px;border:1px solid #d92d20;border-radius:9px;background:#fff;color:#b42318;font-size:12px;font-weight:750;cursor:pointer}
+.app-main .danger-button:hover:not(:disabled){background:#fff1f0;border-color:#b42318}
+.app-main .danger-button:disabled{opacity:.6;cursor:wait}
+@media(max-width:560px){.student-profile-header-actions{width:100%;justify-content:flex-start}.student-profile-header-actions button{flex:1}}
