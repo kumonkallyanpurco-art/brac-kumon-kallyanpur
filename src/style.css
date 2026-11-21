@@ -1469,3 +1469,53 @@ body,.app-layout.workspace{background:#f4f7f9;color:#263746}
 .app-main .danger-button:hover:not(:disabled){background:#fff1f0;border-color:#b42318}
 .app-main .danger-button:disabled{opacity:.6;cursor:wait}
 @media(max-width:560px){.student-profile-header-actions{width:100%;justify-content:flex-start}.student-profile-header-actions button{flex:1}}
+
+
+/* Student Profile directory: use the full content width and remove the empty right side */
+.app-main .content-card:has(.student-profile-search){
+  width:100%;
+  max-width:none;
+  box-sizing:border-box;
+}
+.app-main .student-profile-search{
+  width:100%;
+  max-width:none;
+  margin:18px 0 22px;
+}
+.app-main .student-profile-search .search-input{
+  display:block;
+  width:100%;
+  min-height:52px;
+  box-sizing:border-box;
+  padding:14px 17px;
+  font-size:14px;
+}
+.app-main .student-search-results{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  width:100%;
+  max-width:none;
+}
+.app-main .student-search-result{
+  width:100%;
+  min-height:76px;
+  box-sizing:border-box;
+  margin:0;
+  padding:16px 18px;
+  border:1px solid #dce6ed;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 2px 9px rgba(0,63,104,.045);
+}
+.app-main .student-search-identity strong{font-size:14px;line-height:1.4}
+.app-main .student-search-identity small{font-size:11px}
+.app-main .student-search-actions{gap:8px}
+.app-main .student-search-actions .compact{min-width:66px;min-height:36px;padding:8px 12px;font-size:11px}
+@media(max-width:900px){
+  .app-main .student-search-results{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .app-main .student-search-result{min-height:68px;padding:12px}
+  .app-main .student-search-identity strong{font-size:13px}
+}
