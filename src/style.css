@@ -1199,3 +1199,133 @@ h3{color:var(--app-navy);font-size:14px;letter-spacing:-.15px}
 .add-student-page .form-grid label:has(input[type="checkbox"]){display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:42px;padding:10px 12px;border:1px solid #e6ece7;border-radius:10px;background:#f8faf8}
 .add-student-page .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid #edf1ee}
 @media(max-width:760px){.add-student-page{padding:15px 0 24px}.add-student-page .add-student-modal{padding:20px;max-height:none}.add-student-page .modal-heading h2{font-size:21px}}
+
+
+/* Unified BRAC Kumon green design system across the entire application */
+:root{
+  --kumon-blue:#174b36;
+  --kumon-blue-dark:#103d2b;
+  --kumon-navy:#193d2c;
+  --kumon-sky:#edf5ef;
+  --kumon-text:#20352b;
+  --kumon-muted:#7c8981;
+  --kumon-border:#e3ebe5;
+  --line:#dce6df;
+  --border:#e3ebe5;
+  --surface:#fff;
+  --muted:#7c8981;
+}
+body,.app-layout.workspace{background:#f5f7f5;color:#20352b}
+.app-main{font-family:'Inter','Noto Sans',Arial,sans-serif}
+.app-main .page-heading{padding:28px 0 20px}
+.app-main .page-heading h1{font-size:26px;color:#193d2c;letter-spacing:-.45px}
+.app-main .page-heading .muted{font-size:12px;color:#7c8981}
+.app-main .content-card,
+.app-main .stat-card,
+.app-main .dashboard-day-income,
+.app-main .profile-detail,
+.app-main .attendance-calendar-day,
+.app-main .record-payment-student-preview>div{
+  border-color:#e3ebe5;
+  border-radius:12px;
+  box-shadow:0 3px 14px #183e2708;
+}
+.app-main .content-card{padding:20px;background:#fff}
+.app-main .stat-card{padding:16px;background:#fff}
+.app-main .stat-card strong{font-size:23px;color:#193d2c}
+.app-main .stat-card span,.app-main .stat-card small{font-size:11px;color:#7c8981}
+.app-main .section-heading h2,
+.app-main .dashboard-section-title h2,
+.app-main .modal-heading h2{color:#193d2c;font-size:17px}
+.app-main .dashboard-section-title .eyebrow,
+.app-main .eyebrow{color:#63816e}
+.app-main .dashboard-clock-card{background:linear-gradient(115deg,#174b36,#397a53);border-radius:14px;box-shadow:0 8px 22px #174b3618}
+.app-main .dashboard-clock-card .eyebrow{color:#d7e9dc}
+.app-main .dashboard-section-title h2{color:#193d2c}
+.app-main .dashboard-stats .stat-card{border-top:2px solid #6c9a78}
+.app-main .dashboard-stats .stat-card strong{color:#193d2c}
+.app-main .dashboard-date-tag,.app-main .dashboard-clock-bar{background:#edf5ef;border-color:#dce8df;color:#365444}
+.app-main .dashboard-clock-bar .dashboard-clock{color:#174b36}
+.app-main .dashboard-day-income h3,.app-main .dashboard-day-income>strong{color:#193d2c}
+.app-main .dashboard-day-income .eyebrow{color:#63816e}
+.app-main .dashboard-day-income input{border-color:#dce6df;border-radius:9px}
+.app-main .tab-nav,.app-main .profile-tabs,.app-main .attendance-view-tabs{gap:7px}
+.app-main .tab-button{padding:9px 14px;border:1px solid #dce6df;border-radius:9px;background:#fff;color:#405449;font-size:12px;font-weight:700}
+.app-main .tab-button.active{background:#174b36;border-color:#174b36;color:#fff}
+.app-main .tab-button:hover:not(.active){background:#f2f7f3;border-color:#b9cdbd}
+.app-main .primary-button{background:#174b36;border-radius:9px;padding:11px 16px;font-size:12px;box-shadow:none}
+.app-main .primary-button:hover{background:#103d2b}
+.app-main .button-light{border-color:#dce6df;border-radius:9px;color:#365444;background:#fff;padding:10px 13px;font-size:12px}
+.app-main .button-light:hover{background:#f2f7f3;border-color:#b9cdbd}
+.app-main .text-button{color:#26734a}
+.app-main .sidebar-brand .brand-mark{background:#fff;color:#174b36}
+.app-sidebar{background:#173c2b}
+.sidebar-brand span{color:#c0d4c5}
+.sidebar-label{color:#9db9a4}
+.sidebar-link{color:#dce9df;border-radius:9px;font-size:12px;padding:11px 12px}
+.sidebar-link.active{background:#fff;color:#174b36;box-shadow:0 4px 12px #071c1030}
+.sidebar-link:hover{background:#ffffff18;color:#fff}
+.sidebar-bottom{color:#b9cdbd}
+.sidebar-online-dot{background:#65bd7b;box-shadow:0 0 0 4px #65bd7b20}
+.app-main input:not([type="checkbox"]):not([type="radio"]),
+.app-main select,
+.app-main textarea{
+  border-color:#dce6df;
+  border-radius:9px;
+  color:#20352b;
+  font-size:12px;
+}
+.app-main input:focus,.app-main select:focus,.app-main textarea:focus{
+  border-color:#4a8965;
+  box-shadow:0 0 0 3px #4a89651a;
+  outline:none;
+}
+.app-main .filters input,.app-main .filters select,
+.app-main .fee-period input,.app-main .fee-period select,
+.app-main .inline-entry-form input,.app-main .inline-entry-form select{
+  border-color:#dce6df;
+  border-radius:9px;
+  font-size:12px;
+  min-height:40px;
+}
+.app-main .inline-entry-form{background:#f8faf8;border-color:#e3ebe5;border-radius:11px}
+.app-main .table-wrap{border:1px solid #e8eee9;border-radius:10px}
+.app-main table{background:#fff}
+.app-main th{background:#f5f8f5;color:#718076;font-size:10px;letter-spacing:.55px}
+.app-main th,.app-main td{padding:12px 11px;border-bottom-color:#edf1ee}
+.app-main td{color:#43564a;font-size:12px}
+.app-main td strong{color:#263e30;font-size:12px}
+.app-main .id-cell{color:#53715e}
+.app-main .status-pill{background:#e9f5ed;color:#28734b}
+.app-main .status-pill.on-hold{background:#fff4dc;color:#936411}
+.app-main .status-pill.discontinued{background:#fcebea;color:#b42318}
+.app-main .profile-detail{background:#fbfdfb;border-color:#e3ebe5;border-radius:10px;padding:12px}
+.app-main .profile-detail small{color:#7c8981;font-size:11px}
+.app-main .profile-detail strong{color:#20352b;font-size:13px}
+.app-main .profile-tabs{border-bottom-color:#e3ebe5}
+.app-main .attendance-view-tabs{border-bottom-color:#e3ebe5}
+.app-main .attendance-history-button{border-color:#dce6df;background:#edf5ef;color:#365444;border-radius:9px}
+.app-main .attendance-history-button:hover{background:#e3eee5}
+.app-main .attendance-calendar-day{border-color:#e3ebe5;border-radius:9px}
+.app-main .attendance-calendar-day.present{background:#eff8f0;border-color:#cfe4d2}
+.app-main .attendance-calendar-day.absent{background:#fff2f1;border-color:#f4d5d1}
+.app-main .attendance-calendar-day.leave{background:#fff9e9;border-color:#f1e3b8}
+.app-main .fee-summary-toggle{background:#f7faf8;border-color:#dce6df;color:#365444;border-radius:9px}
+.app-main .fee-summary-toggle:hover{background:#edf5ef}
+.app-main .live-indicator{background:#e9f5ed;color:#28734b}
+.app-main .live-indicator:before{background:#29965a}
+.app-main .record-payment-info{background:#f7faf8;border-color:#e3ebe5;color:#53715e}
+.app-main .record-payment-info strong{color:#20352b}
+.app-main .record-payment-student-preview>div{background:#f8faf8}
+.app-main .record-payment-student-preview small{color:#7c8981}
+.app-main .record-payment-student-preview strong{color:#20352b}
+.app-main .record-payment-actions{border-top-color:#edf1ee}
+.app-main .app-footer{color:#8a968e}
+@media(max-width:760px){
+  .app-main .page-heading{padding:22px 0 16px}
+  .app-main .page-heading h1{font-size:23px}
+  .app-main .content-card{padding:16px}
+  .app-main .stat-card{padding:12px}
+  .app-main .stat-card strong{font-size:20px}
+  .app-main .tab-button{padding:9px 11px;font-size:11px}
+}
