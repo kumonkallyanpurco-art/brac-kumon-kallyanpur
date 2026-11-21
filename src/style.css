@@ -1519,3 +1519,64 @@ body,.app-layout.workspace{background:#f4f7f9;color:#263746}
   .app-main .student-search-result{min-height:68px;padding:12px}
   .app-main .student-search-identity strong{font-size:13px}
 }
+
+
+/* Desktop typography system: match the readable Student Profile scale site-wide */
+@media (min-width: 901px) {
+  .app-main {
+    font-size: 14px !important;
+  }
+  .app-main p,
+  .app-main label,
+  .app-main input,
+  .app-main select,
+  .app-main textarea,
+  .app-main button,
+  .app-main th,
+  .app-main td,
+  .app-main .muted,
+  .app-main .table-footer,
+  .app-main .empty-state,
+  .app-main .status-pill {
+    font-size: 13px !important;
+  }
+  .app-main .eyebrow,
+  .app-main .sidebar-label,
+  .app-main th {
+    font-size: 11px !important;
+  }
+  .app-main .section-heading h2,
+  .app-main .modal-heading h2,
+  .app-main .page-heading h1 {
+    font-size: 22px !important;
+    line-height: 1.3;
+  }
+  .app-main .tab-button,
+  .app-main .profile-tabs button,
+  .app-main .sidebar-link {
+    font-size: 14px !important;
+  }
+  .app-main .profile-detail small,
+  .app-main .profile-detail label {
+    font-size: 13px !important;
+  }
+  .app-main .profile-detail strong,
+  .app-main td strong {
+    font-size: 16px !important;
+    line-height: 1.4;
+  }
+  .app-main .button-light,
+  .app-main .primary-button,
+  .app-main .danger-button,
+  .app-main .compact,
+  .app-main .text-button {
+    font-size: 13px !important;
+  }
+  .app-main .stat-card span,
+  .app-main .stat-card small {
+    font-size: 13px !important;
+  }
+  .app-main .stat-card strong {
+    font-size: 26px !important;
+  }
+}
