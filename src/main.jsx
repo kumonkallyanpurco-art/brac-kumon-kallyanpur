@@ -83,6 +83,14 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studentMenuOpen, setStudentMenuOpen] = useState(false);
   const [paymentMenuOpen, setPaymentMenuOpen] = useState(() => ['FeeTracker','RecordPayment'].includes(activeTab));
+  // Restore the Add Student form when that page was open before a browser refresh.
+  useEffect(() => {
+    if (activeTab === 'AddStudent') {
+      setEditingId(null);
+      setForm(emptyStudent);
+      setShowForm(true);
+    }
+  }, [activeTab]);
   useEffect(() => { try { window.localStorage.setItem('brac-kumon-profile-tab', profileTab); } catch { /* storage may be unavailable */ } }, [profileTab]);
   useEffect(() => {
     try { window.localStorage.setItem('brac-kumon-active-tab', activeTab); }
