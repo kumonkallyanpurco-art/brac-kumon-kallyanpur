@@ -974,62 +974,52 @@ function App() {
     </section>}
 
     {activeTab === 'Attendance' && <section className="content-card attendance-register">
-      <div className="section-heading"><div><p className="eyebrow">CLASSROOM</p><h2>Student Attendance</h2><p className="muted">Select a class date and choose a student list.</p></div></div>
-      <div className="attendance-date-control">
-        <label>Class Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
-        <label className="attendance-search-field">Search Student<input type="search" placeholder="Search by name or ID..." value={attendanceSearch} onChange={e => setAttendanceSearch(e.target.value)} /></label>
-      </div>
-      <div className="profile-tabs attendance-view-tabs" role="tablist" aria-label="Attendance student lists">
-        {['All Students', 'Today’s Class', 'New Enrollment'].map(tab => <button type="button" key={tab} role="tab" aria-selected={attendanceView === tab} className={attendanceView === tab ? 'tab-button active' : 'tab-button'} onClick={() => setAttendanceView(tab)}>{tab}</button>)}
-      </div>
-      {attendanceHistoryStudent ? (() => {
-        const monthStart = profileAttendanceMonth + '-01';
-        const [year, month] = profileAttendanceMonth.split('-').map(Number);
-        const firstWeekday = new Date(year, month - 1, 1).getDay();
-        const daysInMonth = new Date(year, month, 0).getDate();
-        const cells = [...Array(firstWeekday).fill(null), ...Array.from({length: daysInMonth}, (_, i) => i + 1)];
-        return <div className="student-attendance-history">
-          <div className="attendance-history-student-heading">
-            <div><h3>{selectedProfile?.full_name || 'Student Attendance'}</h3><span>{selectedProfile?.student_id || ''} · {selectedProfile?.subject || ''}</span></div>
-            <button type="button" className="button-light compact" onClick={() => setAttendanceHistoryStudent(null)}>Back to All Students</button>
-          </div>
-          <div className="attendance-date-control"><label>Month<input type="month" value={profileAttendanceMonth} onChange={e => setProfileAttendanceMonth(e.target.value)} /></label></div>
-          <div className="attendance-roster-summary">
-            <div><span>Total Classes</span><strong>{profileAttendanceCounts.classes}</strong></div>
-            <div><span>Present</span><strong>{profileAttendanceCounts.present}</strong></div>
-            <div><span>Absent</span><strong>{profileAttendanceCounts.absent}</strong></div>
-            <div><span>Leave</span><strong>{profileAttendanceCounts.leave}</strong></div>
-            <div><span>Not Marked</span><strong>{profileAttendanceCounts.notMarked}</strong></div>
-          </div>
-          <div className="student-attendance-calendar scheduled-class-days">
-            {profileAttendanceCalendar.map(record => <div className={'attendance-calendar-day ' + record.attendance.toLowerCase().replace(/\s+/g,'-')} key={record.date}>
-              <strong>{new Date(record.date + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</strong>
-              <span>{record.day}</span>
-              <span>{record.attendance}</span>
-            </div>)}
-            {!profileAttendanceCalendar.length && <div className="empty-state"><strong>No scheduled classes</strong><span>No class days are scheduled for this student in the selected month.</span></div>}
-          </div>
-        </div>;
-      })() : <>
-      <div className="attendance-roster-heading"><h3>{attendanceView}</h3><span>{visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).length} students</span></div>
-      <div className="attendance-roster-list">
-        {visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).map((student, index) => <div className="attendance-roster-row" key={student.id}>
-          <div className="attendance-roster-number">{index + 1}</div>
-          <div className="attendance-roster-student"><strong>{student.full_name}</strong><small>{student.student_id} · {student.subject}</small></div>
-          <div className="attendance-roster-status">
-            {isAdmin ? <select aria-label={`Attendance status for ${student.full_name}`} value={student.attendance} disabled={attendanceSavingId === student.id} onChange={event => saveStudentAttendance(student.id, event.target.value)}>
-              <option value="">Mark attendance</option><option value="Present">Present</option><option value="Absent">Absent</option><option value="Leave">Leave</option>
-            </select> : <span className={'status-pill ' + (student.attendance === 'Present' ? 'active' : student.attendance ? 'discontinued' : 'pending')}>{student.attendance || 'Not marked'}</span>}
-            {attendanceSavingId === student.id && <small className="attendance-saving-label">Saving…</small>}
-            <button type="button" className="attendance-history-button" onClick={() => openAttendanceHistory(student)}>History</button>
-          </div>
-        </div>)}
-        {!visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).length && <div className="empty-state"><strong>{attendanceView === 'Today’s Class' ? 'No classes scheduled' : attendanceView === 'New Enrollment' ? 'No new enrollment for this class date' : 'No students found'}</strong><span>{attendanceView === 'New Enrollment' ? 'Students whose class start date matches the selected date will appear here.' : 'Try another search or select a different class date.'}</span></div>}
-      </div>
-      <p className="attendance-register-note">Choose Present, Absent or Leave to save. To edit attendance, select a different status for the same student and date.</p>
+      {!attendanceHistoryStudent && <>
+        <div className="section-heading"><div><p className="eyebrow">CLASSROOM</p><h2>Student Attendance</h2><p className="muted">Select a class date and choose a student list.</p></div></div>
+        <div className="attendance-date-control">
+          <label>Class Date<input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)} required /></label>
+          <label className="attendance-search-field">Search Student<input type="search" placeholder="Search by name or ID..." value={attendanceSearch} onChange={e => setAttendanceSearch(e.target.value)} /></label>
+        </div>
+        <div className="profile-tabs attendance-view-tabs" role="tablist" aria-label="Attendance student lists">
+          {['All Students', 'Today’s Class', 'New Enrollment'].map(tab => <button type="button" key={tab} role="tab" aria-selected={attendanceView === tab} className={attendanceView === tab ? 'tab-button active' : 'tab-button'} onClick={() => setAttendanceView(tab)}>{tab}</button>)}
+        </div>
       </>}
-
-
+      {attendanceHistoryStudent ? <>
+        <div className="attendance-history-student-heading">
+          <div><h3>{selectedProfile?.full_name || 'Student Attendance'}</h3><span>{selectedProfile?.student_id || ''} · {selectedProfile?.subject || ''}</span></div>
+          <button type="button" className="button-light compact" onClick={() => setAttendanceHistoryStudent(null)}>Back to All Students</button>
+        </div>
+        <div className="fee-period">
+          <label>Month<input type="month" value={profileAttendanceMonth} onChange={e => setProfileAttendanceMonth(e.target.value)} /></label>
+        </div>
+        <div className="stat-grid fee-stats">
+          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon">▦</span><div><span>Classes</span><strong>{profileAttendanceCounts.classes}</strong></div></article>
+          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon present">✓</span><div><span>Present</span><strong>{profileAttendanceCounts.present}</strong></div></article>
+          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon absent">×</span><div><span>Absent</span><strong>{profileAttendanceCounts.absent}</strong></div></article>
+          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon leave">◷</span><div><span>Leave</span><strong> {profileAttendanceCounts.leave}</strong></div></article>
+          <article className="stat-card attendance-stat-card"><span className="attendance-stat-icon pending">○</span><div><span>Not marked yet</span><strong>{profileAttendanceCounts.notMarked}</strong></div></article>
+        </div>
+        <div className="table-wrap"><table><thead><tr><th>Date</th><th>Day</th><th>Class</th><th>Attendance</th><th>Holiday / Note</th></tr></thead><tbody>
+          {profileAttendanceCalendar.map(row => <tr key={row.date}><td>{row.date}</td><td>{row.day}</td><td>Class</td><td><span className={'status-pill ' + (row.attendance === 'Present' ? 'active' : row.attendance === 'Not marked' ? 'pending' : 'discontinued')}>{row.attendance}</span></td><td>{row.remarks || '—'}</td></tr>)}
+        </tbody></table>{!profileAttendanceCalendar.length && <div className="empty-state">No scheduled class dates for this month.</div>}</div>
+      </> : <>
+        <div className="attendance-roster-heading"><h3>{attendanceView}</h3><span>{visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).length} students</span></div>
+        <div className="attendance-roster-list">
+          {visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).map((student, index) => <div className="attendance-roster-row" key={student.id}>
+            <div className="attendance-roster-number">{index + 1}</div>
+            <div className="attendance-roster-student"><strong>{student.full_name}</strong><small>{student.student_id} · {student.subject}</small></div>
+            <div className="attendance-roster-status">
+              {isAdmin ? <select aria-label={`Attendance status for ${student.full_name}`} value={student.attendance} disabled={attendanceSavingId === student.id} onChange={event => saveStudentAttendance(student.id, event.target.value)}>
+                <option value="">Mark attendance</option><option value="Present">Present</option><option value="Absent">Absent</option><option value="Leave">Leave</option>
+              </select> : <span className={'status-pill ' + (student.attendance === 'Present' ? 'active' : student.attendance ? 'discontinued' : 'pending')}>{student.attendance || 'Not marked'}</span>}
+              {attendanceSavingId === student.id && <small className="attendance-saving-label">Saving…</small>}
+              <button type="button" className="attendance-history-button" onClick={() => openAttendanceHistory(student)}>History</button>
+            </div>
+          </div>)}
+          {!visibleAttendanceRoster.filter(student => `${student.full_name} ${student.student_id}`.toLowerCase().includes(attendanceSearch.trim().toLowerCase())).length && <div className="empty-state"><strong>{attendanceView === 'Today’s Class' ? 'No classes scheduled' : attendanceView === 'New Enrollment' ? 'No new enrollment for this class date' : 'No students found'}</strong><span>{attendanceView === 'New Enrollment' ? 'Students whose class start date matches the selected date will appear here.' : 'Try another search or select a different class date.'}</span></div>}
+        </div>
+        <p className="attendance-register-note">Choose Present, Absent or Leave to save. To edit attendance, select a different status for the same student and date.</p>
+      </>}
     </section>}
 
     {activeTab === 'History' && <section className="content-card">
