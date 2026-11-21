@@ -67,7 +67,7 @@ function App() {
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [profileHistory, setProfileHistory] = useState([]);
   const [profileAttendance, setProfileAttendance] = useState([]);
-  const [profileAttendanceMonth, setProfileAttendanceMonth] = useState(todayDhaka.slice(0, 7));
+  const [profileAttendanceMonth, setProfileAttendanceMonth] = useState(() => { try { return window.localStorage.getItem('brac-kumon-attendance-month') || todayDhaka.slice(0, 7); } catch { return todayDhaka.slice(0, 7); } });
   const [profileTab, setProfileTab] = useState(() => { try { const saved = window.localStorage.getItem('brac-kumon-profile-tab'); return ['Overview','Class Schedule','Learning Progress','Achievement Test','History'].includes(saved) ? saved : 'Overview'; } catch { return 'Overview'; } });
   const [profileLoading, setProfileLoading] = useState(false);
 
@@ -87,13 +87,23 @@ function App() {
     try { window.localStorage.setItem('brac-kumon-active-tab', activeTab); }
     catch { /* storage may be unavailable */ }
   }, [activeTab]);
+  // Keep the exact attendance sub-view and filters when the browser refreshes.
+  useEffect(() => {
+    try {
+      if (attendanceHistoryStudent) window.localStorage.setItem('brac-kumon-attendance-history-student', attendanceHistoryStudent);
+      else window.localStorage.removeItem('brac-kumon-attendance-history-student');
+      window.localStorage.setItem('brac-kumon-attendance-view', attendanceView);
+      window.localStorage.setItem('brac-kumon-attendance-date', attendanceDate);
+      window.localStorage.setItem('brac-kumon-attendance-month', profileAttendanceMonth);
+    } catch { /* storage may be unavailable */ }
+  }, [attendanceHistoryStudent, attendanceView, attendanceDate, profileAttendanceMonth]);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [attendanceScheduleHistory, setAttendanceScheduleHistory] = useState([]);
   const [attendanceSavingId, setAttendanceSavingId] = useState('');
   const [attendanceSearch, setAttendanceSearch] = useState('');
-  const [attendanceView, setAttendanceView] = useState('All Students');
-  const [attendanceHistoryStudent, setAttendanceHistoryStudent] = useState(null);
-  const [attendanceDate, setAttendanceDate] = useState(todayDhaka);
+  const [attendanceView, setAttendanceView] = useState(() => { try { return window.localStorage.getItem('brac-kumon-attendance-view') || 'All Students'; } catch { return 'All Students'; } });
+  const [attendanceHistoryStudent, setAttendanceHistoryStudent] = useState(() => { try { return window.localStorage.getItem('brac-kumon-attendance-history-student') || null; } catch { return null; } });
+  const [attendanceDate, setAttendanceDate] = useState(() => { try { return window.localStorage.getItem('brac-kumon-attendance-date') || todayDhaka; } catch { return todayDhaka; } });
   const [historyStudent, setHistoryStudent] = useState('');
   const [historyDate, setHistoryDate] = useState('');
   const [historyType, setHistoryType] = useState('');
@@ -628,7 +638,7 @@ function App() {
   const dashboardLeaveCount = dashboardEmployeeAttendance
     .filter(row => ['leave', 'on leave'].includes(String(row.attendance_status || '').toLowerCase())).length;
 
-  async function openAttendanceHistory(student) {
+  async async function openAttendanceHistory(student) {
     setAttendanceHistoryStudent(student.id);
     setProfileAttendanceMonth(todayDhaka.slice(0, 7));
     await openStudentProfile(student, true);
@@ -657,6 +667,14 @@ function App() {
     else setProfileAttendance(attendanceResult.data || []);
     setProfileLoading(false);
   }
+
+  useEffect(() => {
+    if (activeTab !== 'Attendance' || !attendanceHistoryStudent || !students.length) return;
+    if (selectedProfile?.id === attendanceHistoryStudent && !profileLoading) return;
+    const savedStudent = students.find(student => student.id === attendanceHistoryStudent);
+    if (savedStudent) openStudentProfile(savedStudent, true);
+    else setAttendanceHistoryStudent(null);
+  }, [activeTab, attendanceHistoryStudent, students]);
 
   useEffect(() => {
     if (activeTab !== 'Students' || selectedProfile || !students.length) return;
