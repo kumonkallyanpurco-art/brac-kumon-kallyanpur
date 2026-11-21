@@ -124,6 +124,7 @@ function App() {
   const [feeDate, setFeeDate] = useState(todayDhaka);
   const [feeMonth, setFeeMonth] = useState(String(Number(dhakaDateParts.month)));
   const [feeYear, setFeeYear] = useState(dhakaDateParts.year);
+  const [feeSummaryOpen, setFeeSummaryOpen] = useState(false);
   const [feeAmount, setFeeAmount] = useState('');
   const [feeExpected, setFeeExpected] = useState('');
   const [feePlan, setFeePlan] = useState('Full Month');
@@ -1139,13 +1140,16 @@ function App() {
       <div className="table-footer">Showing {filteredEmployees.length} of {employees.length} employees. Inactive employees remain saved for historical attendance and salary records.</div>
     </section>}
 
-    {activeTab === 'FeeTracker' && isAdmin && <section className="content-card">
+    {activeTab === 'FeeTracker' && isAdmin && <section className="content-card fee-tracker">
       <div className="section-heading"><div><p className="eyebrow">PAYMENTS</p><h2>Monthly Fee Tracker</h2><p className="muted">Student fee status and collection summary for the selected month.</p></div></div>
       <div className="fee-period">
         <label>Select Month<select value={feeMonth} onChange={e=>setFeeMonth(e.target.value)}>{Array.from({length:12},(_,i)=><option key={i+1} value={i+1}>{new Date(2000,i,1).toLocaleString('en',{month:'long'})}</option>)}</select></label>
         <label>Select Year<select value={feeYear} onChange={e=>setFeeYear(e.target.value)}>{Array.from({length:8},(_,i)=>2026+i).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
       </div>
-      <div className="stat-grid fee-stats">
+      <button type="button" className={'fee-summary-toggle' + (feeSummaryOpen ? ' is-open' : '')} onClick={() => setFeeSummaryOpen(open => !open)} aria-expanded={feeSummaryOpen}>
+        <span>Fee Summary</span><span className="fee-summary-chevron" aria-hidden="true">⌄</span>
+      </button>
+      {feeSummaryOpen && <div className="stat-grid fee-stats">
         <article className="stat-card"><span>Students Billed</span><strong>{trackerStats.billed}</strong></article>
         <article className="stat-card"><span>Total Fee Due</span><strong>৳{money(trackerStats.due)}</strong></article>
         <article className="stat-card"><span>Collected (This Month's Fee)</span><strong>৳{money(trackerStats.collected)}</strong></article>
@@ -1155,7 +1159,7 @@ function App() {
         <article className="stat-card"><span>Unpaid</span><strong>{trackerStats.unpaid}</strong></article>
         <article className="stat-card"><span>Enrollment Fee Received</span><strong>৳{money(trackerStats.enrollment)}</strong></article>
         <article className="stat-card"><span>Total Cash Received</span><strong>৳{money(trackerStats.cash)}</strong></article>
-      </div>
+      </div>}
       <div className="table-wrap"><table><thead><tr><th>Student ID</th><th>Student Name</th><th>Subject (This Month)</th><th>Fee Type</th><th>Fee Due</th><th>Paid</th><th>Balance</th><th>Status</th><th>Enrollment Fee Paid (To Date)</th></tr></thead><tbody>
         {trackerRows.map(({student,subject,feeType,due,paid,balance,status,enrollmentPaid})=><tr key={student.id}><td>{student.student_id}</td><td>{student.full_name}</td><td>{subject}</td><td>{feeType}</td><td>৳{money(due)}</td><td>৳{money(paid)}</td><td>৳{money(balance)}</td><td><span className={'status-pill '+(status==='Paid'?'active':status==='Partial'?'pending':status==='Unpaid'?'discontinued':'')}>{status}</span></td><td>৳{money(enrollmentPaid)}</td></tr>)}
       </tbody></table>{!trackerRows.length && <div className="empty-state">No student records found.</div>}</div>
