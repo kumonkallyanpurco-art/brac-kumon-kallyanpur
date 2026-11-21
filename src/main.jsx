@@ -971,8 +971,6 @@ function App() {
       {!profileLoading && profileTab === 'History' && <div className="table-wrap"><table><thead><tr><th>Date</th><th>Event</th><th>Subject</th><th>Previous</th><th>New / Details</th><th>Remarks</th></tr></thead><tbody>
         {profileHistory.map(x => <tr key={x.id}><td>{x.event_date}</td><td>{x.event_type}</td><td>{x.subject || '—'}</td><td>{x.event_type === 'Time Change' ? formatClassTime(x.previous_class_time) : (x.previous_level || x.test_level || x.previous_class_days || x.previous_class_time || x.previous_status || '—')}</td><td>{x.event_type === 'Time Change' ? formatClassTime(x.new_class_time) : (x.new_level || x.test_result || x.new_class_days || x.new_class_time || x.new_status || x.discontinued_reason_or_transfer_centre || '—')}</td><td>{x.remarks || '—'}</td></tr>)}
       </tbody></table>{!profileHistory.length && <div className="empty-state">No history records found for this student.</div>}</div>}
->}
-
     </section>}
 
     {activeTab === 'Attendance' && <section className="content-card attendance-register">
@@ -1005,7 +1003,7 @@ function App() {
             <div><span>Not Marked</span><strong>{profileAttendanceCounts.notMarked}</strong></div>
           </div>
           <div className="student-attendance-calendar scheduled-class-days">
-            {profileAttendanceCalendar.map(record => <div className={'attendance-calendar-day ' + record.attendance.toLowerCase().replace(/\\s+/g,'-')} key={record.date}>
+            {profileAttendanceCalendar.map(record => <div className={'attendance-calendar-day ' + record.attendance.toLowerCase().replace(/\s+/g,'-')} key={record.date}>
               <strong>{new Date(record.date + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</strong>
               <span>{record.day}</span>
               <span>{record.attendance}</span>
