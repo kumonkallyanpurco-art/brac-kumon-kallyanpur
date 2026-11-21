@@ -1398,3 +1398,16 @@ body,.app-layout.workspace{background:#f4f7f9;color:#263746}
 @media(max-width:760px){
  .record-payment-page .record-payment-modal,.add-student-page .add-student-modal{width:100%}
 }
+
+
+/* Improve Student Profile identity and detail readability on desktop */
+@media(min-width:761px){
+  .app-main .student-profile-card{padding:28px 30px}
+  .app-main .student-profile-card .profile-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:22px 0}
+  .app-main .student-profile-card .profile-detail{min-height:82px;padding:17px 18px;border-radius:12px}
+  .app-main .student-profile-card .profile-detail small{font-size:13px;line-height:1.4;margin-bottom:9px;color:#657b89}
+  .app-main .student-profile-card .profile-detail strong{font-size:16px;line-height:1.5;font-weight:650;color:#173f5b}
+  .app-main .student-profile-card .section-heading .eyebrow{font-size:12px;letter-spacing:.8px}
+  .app-main .student-profile-card .status-pill{font-size:12px;padding:6px 11px}
+  .app-main .student-profile-card .profile-tabs .tab-button{min-height:46px;padding:11px 17px;font-size:14px}
+}
